@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>
+{% block title %}{% endblock %}
+</title>
+
+<script src="https://cdn.tailwindcss.com"></script>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+<style>
+
+body{
+    margin:0;
+    font-family:Inter,sans-serif;
+    background:#050816;
+    color:white;
+    overflow-x:hidden;
+}
+
+/* Grid */
+
+.grid-bg{
+
+position:fixed;
+inset:0;
+
+background-image:
+linear-gradient(rgba(34,211,238,.05) 1px,transparent 1px),
+linear-gradient(90deg,rgba(34,211,238,.05) 1px,transparent 1px);
+
+background-size:42px 42px;
+
+z-index:-2;
+
+}
+
+/* Glow */
+
+.glow{
+
+position:fixed;
+
+left:50%;
+
+top:-250px;
+
+transform:translateX(-50%);
+
+width:950px;
+
+height:950px;
+
+border-radius:999px;
+
+background:
+radial-gradient(circle,
+rgba(124,58,237,.28),
+transparent 65%);
+
+filter:blur(25px);
+
+z-index:-1;
+
+}
+
+/* Navbar */
+
+.navbar{
+
+height:70px;
+
+display:flex;
+
+justify-content:space-between;
+
+align-items:center;
+
+padding:0 50px;
+
+border-bottom:1px solid #1E293B;
+
+background:rgba(5,8,22,.75);
+
+backdrop-filter:blur(18px);
+
+position:sticky;
+
+top:0;
+
+z-index:1000;
+
+}
+
+.logo{
+
+font-size:30px;
+
+font-weight:700;
+
+font-family:"Space Grotesk";
+
+}
+
+.logo span{
+
+color:#22D3EE;
+
+}
+
+.nav-links{
+
+display:flex;
+
+gap:16px;
+
+}
+
+.nav-btn{
+
+padding:10px 22px;
+
+border-radius:12px;
+
+font-weight:600;
+
+text-decoration:none;
+
+transition:.3s;
+
+}
+
+.login{
+
+border:1px solid #22D3EE;
+
+color:#22D3EE;
+
+}
+
+.login:hover{
+
+background:#22D3EE;
+
+color:black;
+
+}
+
+.register{
+
+background:#22D3EE;
+
+color:black;
+
+}
+
+.register:hover{
+
+background:#67E8F9;
+
+}
+
+/* Content */
+
+.main-content{
+
+max-width:1400px;
+
+margin:auto;
+
+padding:50px 25px;
+
+}
+
+</style>
+
+</head>
+
+<body>
+
+<div class="grid-bg"></div>
+
+<div class="glow"></div>
+
+<nav class="navbar">
+
+<a href="{% url 'home' %}" class="logo">
+
+Vuln<span>Ex</span>
+
+</a>
+
+<div class="nav-links">
+
+{% if request.session.user_id %}
+
+<div class="flex items-center gap-5">
+
+    <!-- User Profile -->
+    <div class="flex items-center gap-3">
+
+        <div class="w-10 h-10 rounded-full bg-cyan-400 text-black flex items-center justify-center font-bold">
+            {{ request.session.user_name|first|upper }}
+        </div>
+
+        <div>
+            <p class="font-semibold leading-none">
+                {{ request.session.user_name }}
+            </p>
+        </div>
+
+    </div>
+
+    <a href="{% url 'logout' %}"
+       class="px-4 py-2 rounded-xl border border-red-500 text-red-400 hover:bg-red-500 hover:text-white transition">
+        Logout
+    </a>
+
+</div>
+
+{% else %}
+
+<a href="{% url 'login' %}" class="nav-btn login">
+    Login
+</a>
+
+<a href="{% url 'register' %}" class="nav-btn register">
+    Register
+</a>
+
+{% endif %}
+
+</div>
+
+</nav>
+
+<div class="main-content">
+
+{% block content %}
+
+{% endblock %}
+
+</div>
+
+</body>
+
+</html>

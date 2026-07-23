@@ -1,0 +1,408 @@
+{% extends 'base.html' %}
+
+{% block title %}
+Dashboard
+{% endblock %}
+
+{% block content %}
+
+<div class="flex min-h-[calc(100vh-70px)]">
+
+    <!-- Sidebar -->
+    <aside class="w-64 bg-slate-900 border-r border-slate-800 p-6">
+
+        <h2 class="text-2xl font-bold text-cyan-400 mb-10">
+            VulnEx
+        </h2>
+
+        <nav class="space-y-2">
+
+            <a href="#" class="block px-4 py-3 rounded-xl bg-cyan-500 text-black font-semibold">
+                🏠 Dashboard
+            </a>
+
+            <a href="#" class="block px-4 py-3 rounded-xl hover:bg-slate-800">
+                🌐 My Websites
+            </a>
+
+            <a href="#" class="block px-4 py-3 rounded-xl hover:bg-slate-800">
+                🔍 Scan
+            </a>
+
+            <a href="#" class="block px-4 py-3 rounded-xl hover:bg-slate-800">
+                📄 Reports
+            </a>
+
+            <a href="#" class="block px-4 py-3 rounded-xl hover:bg-slate-800">
+                👤 Profile
+            </a>
+
+            <a href="#">
+                🚪 Logout
+            </a>
+
+        </nav>
+
+    </aside>
+
+    <!-- Main Content -->
+
+    <main class="flex-1 p-8">
+
+        <div class="flex justify-between items-center mb-8">
+
+            <div>
+
+                <h1 class="text-4xl font-bold">
+                    Dashboard
+                </h1>
+
+                <p class="text-slate-400 mt-2">
+                    Welcome back! Here's your security overview.
+                </p>
+
+            </div>
+
+            <button class="bg-cyan-500 text-black px-5 py-3 rounded-xl font-semibold hover:bg-cyan-400">
+                + Add Website
+            </button>
+
+        </div>
+
+
+        <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 mb-8">
+
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 hover:border-cyan-400 transition">
+
+        <p class="text-slate-400 text-sm">
+            Total Websites
+        </p>
+
+        <h2 class="text-4xl font-bold mt-3">
+            12
+        </h2>
+
+        <p class="text-green-400 mt-2">
+            +2 this week
+        </p>
+
+    </div>
+
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 hover:border-cyan-400 transition">
+
+        <p class="text-slate-400 text-sm">
+            Total Scans
+        </p>
+
+        <h2 class="text-4xl font-bold mt-3">
+            84
+        </h2>
+
+        <p class="text-cyan-400 mt-2">
+            +15 today
+        </p>
+
+    </div>
+
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 hover:border-red-500 transition">
+
+        <p class="text-slate-400 text-sm">
+            Critical Vulnerabilities
+        </p>
+
+        <h2 class="text-4xl font-bold text-red-400 mt-3">
+            7
+        </h2>
+
+        <p class="text-red-300 mt-2">
+            Immediate attention
+        </p>
+
+    </div>
+
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 hover:border-green-400 transition">
+
+        <p class="text-slate-400 text-sm">
+            Security Score
+        </p>
+
+        <h2 class="text-4xl font-bold text-green-400 mt-3">
+            91%
+        </h2>
+
+        <p class="text-green-300 mt-2">
+            Excellent
+        </p>
+
+    </div>
+
+</div>
+<div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
+
+    <!-- Recent Websites -->
+
+    <div class="xl:col-span-2 bg-slate-900 border border-slate-800 rounded-2xl p-6">
+
+        <div class="flex justify-between items-center mb-5">
+
+            <h2 class="text-xl font-semibold">
+                Recent Websites
+            </h2>
+
+            <button class="text-cyan-400 hover:text-cyan-300">
+                View All
+            </button>
+
+        </div>
+
+        <table class="w-full">
+
+            <thead>
+
+                <tr class="text-slate-400 border-b border-slate-700">
+
+                    <th class="text-left py-3">Website</th>
+
+                    <th>Status</th>
+
+                    <th>Last Scan</th>
+
+                    <th>Action</th>
+
+                </tr>
+
+            </thead>
+
+            <tbody>
+
+                <tr class="border-b border-slate-800">
+
+                    <td class="py-4">example.com</td>
+
+                    <td class="text-green-400">Secure</td>
+
+                    <td>Today</td>
+
+                    <td>
+
+                        <button class="text-cyan-400">
+                            Scan
+                        </button>
+
+                    </td>
+
+                </tr>
+
+                <tr class="border-b border-slate-800">
+
+                    <td class="py-4">github.com</td>
+
+                    <td class="text-yellow-400">Medium</td>
+
+                    <td>Yesterday</td>
+
+                    <td>
+
+                        <button class="text-cyan-400">
+                            Scan
+                        </button>
+
+                    </td>
+
+                </tr>
+
+                <tr>
+
+                    <td class="py-4">mysite.com</td>
+
+                    <td class="text-red-400">Critical</td>
+
+                    <td>2 days ago</td>
+
+                    <td>
+
+                        <button class="text-cyan-400">
+                            Scan
+                        </button>
+
+                    </td>
+
+                </tr>
+
+            </tbody>
+
+        </table>
+
+    </div>
+
+    <!-- Recent Activity -->
+
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6">
+
+        <h2 class="text-xl font-semibold mb-5">
+
+            Recent Activity
+
+        </h2>
+
+        <div class="space-y-5">
+
+            <div>
+
+                <p class="text-green-400">
+                    ✔ Scan Completed
+                </p>
+
+                <p class="text-slate-400 text-sm">
+                    example.com
+                </p>
+
+            </div>
+
+            <div>
+
+                <p class="text-red-400">
+                    ⚠ SQL Injection Found
+                </p>
+
+                <p class="text-slate-400 text-sm">
+                    mysite.com
+                </p>
+
+            </div>
+
+            <div>
+
+                <p class="text-cyan-400">
+                    ✔ Report Generated
+                </p>
+
+                <p class="text-slate-400 text-sm">
+                    github.com
+                </p>
+
+            </div>
+
+            <div>
+
+                <p class="text-yellow-400">
+                    ⚠ Missing CSP Header
+                </p>
+
+                <p class="text-slate-400 text-sm">
+                    abc.com
+                </p>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div><div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+
+    <!-- Security Score -->
+
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6">
+
+        <h2 class="text-xl font-semibold mb-5">
+
+            Security Distribution
+
+        </h2>
+
+        <div class="space-y-5">
+
+            <div>
+
+                <div class="flex justify-between">
+
+                    <span>Critical</span>
+
+                    <span>18%</span>
+
+                </div>
+
+                <div class="w-full h-3 bg-slate-800 rounded-full mt-2">
+
+                    <div class="h-3 bg-red-500 rounded-full w-[18%]"></div>
+
+                </div>
+
+            </div>
+
+            <div>
+
+                <div class="flex justify-between">
+
+                    <span>Medium</span>
+
+                    <span>32%</span>
+
+                </div>
+
+                <div class="w-full h-3 bg-slate-800 rounded-full mt-2">
+
+                    <div class="h-3 bg-yellow-400 rounded-full w-[32%]"></div>
+
+                </div>
+
+            </div>
+
+            <div>
+
+                <div class="flex justify-between">
+
+                    <span>Low</span>
+
+                    <span>50%</span>
+
+                </div>
+
+                <div class="w-full h-3 bg-slate-800 rounded-full mt-2">
+
+                    <div class="h-3 bg-green-500 rounded-full w-[50%]"></div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+    <!-- AI Recommendations -->
+
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6">
+
+        <h2 class="text-xl font-semibold mb-5">
+
+            AI Recommendations
+
+        </h2>
+
+        <ul class="space-y-4 text-slate-300">
+
+            <li>✅ Enable Content Security Policy</li>
+
+            <li>✅ Disable Server Version Headers</li>
+
+            <li>✅ Force HTTPS Everywhere</li>
+
+            <li>✅ Update vulnerable JavaScript libraries</li>
+
+            <li>✅ Use parameterized SQL queries</li>
+
+        </ul>
+
+    </div>
+
+</div>
+
+        <!-- Cards go here -->
+
+    </main>
+
+</div>
+
+{% endblock %}

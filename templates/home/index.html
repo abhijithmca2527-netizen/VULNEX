@@ -1,0 +1,257 @@
+{% extends 'base.html' %}
+
+{% block title %}
+VulnEx | Home
+{% endblock %}
+
+{% block content %}
+
+<style>
+body{
+    background:#050816;
+    color:white;
+    overflow-x:hidden;
+}
+
+.grid-bg{
+    position:fixed;
+    inset:0;
+    background-image:
+        linear-gradient(rgba(34,211,238,.05) 1px,transparent 1px),
+        linear-gradient(90deg,rgba(34,211,238,.05) 1px,transparent 1px);
+    background-size:42px 42px;
+    z-index:-2;
+}
+
+.glow{
+    position:fixed;
+    left:50%;
+    top:-250px;
+    transform:translateX(-50%);
+    width:950px;
+    height:950px;
+    border-radius:999px;
+    background:
+    radial-gradient(circle,
+    rgba(124,58,237,.30),
+    transparent 65%);
+    filter:blur(25px);
+    z-index:-1;
+}
+
+.card-glass{
+    background:rgba(15,23,42,.75);
+    backdrop-filter:blur(18px);
+    border:1px solid #1E293B;
+    transition:.3s;
+}
+
+.card-glass:hover{
+    border-color:#22D3EE;
+    transform:translateY(-5px);
+    box-shadow:0 0 30px rgba(34,211,238,.15);
+}
+</style>
+
+<div class="grid-bg"></div>
+<div class="glow"></div>
+
+<!-- HERO -->
+
+<section class="min-h-screen flex items-center">
+
+<div class="max-w-7xl mx-auto px-6 w-full">
+
+<div class="grid lg:grid-cols-2 gap-16 items-center">
+
+<!-- LEFT -->
+
+<div>
+
+<span class="inline-block px-4 py-2 rounded-full border border-cyan-400/30 bg-cyan-400/10 text-cyan-400 text-sm font-semibold mb-6">
+
+🛡 AI Security Platform
+
+</span>
+
+<h1 class="text-5xl lg:text-7xl font-bold leading-tight mb-6">
+
+Protect Your Website
+
+<span class="text-cyan-400">
+
+with VulnEx
+
+</span>
+
+</h1>
+
+<p class="text-slate-400 text-xl leading-8 mb-10">
+
+AI-powered vulnerability assessment platform that scans websites,
+detects security flaws, analyzes risks, and generates intelligent
+security reports in seconds.
+
+</p>
+
+<div class="flex flex-wrap gap-4">
+
+<a href="{% url 'login' %}"
+class="px-8 py-4 rounded-xl bg-cyan-400 text-black font-bold hover:bg-cyan-300 transition-all duration-300 hover:shadow-lg hover:shadow-cyan-400/40">
+
+Get Started
+
+</a>
+
+<a href="#features"
+class="px-8 py-4 rounded-xl border border-slate-600 hover:border-cyan-400 hover:text-cyan-400 transition">
+
+Learn More
+
+</a>
+
+</div>
+
+</div>
+
+<!-- RIGHT -->
+
+<div>
+
+<div class="card-glass rounded-3xl p-8">
+
+<h3 class="text-2xl font-bold mb-6">
+
+Security Dashboard Preview
+
+</h3>
+
+<div class="space-y-5">
+
+<div class="flex justify-between">
+
+<span>Total Websites</span>
+
+<span class="text-cyan-400 font-bold">
+
+24
+
+</span>
+
+</div>
+
+<div class="flex justify-between">
+
+<span>Critical Vulnerabilities</span>
+
+<span class="text-red-400 font-bold">
+
+05
+
+</span>
+
+</div>
+
+<div class="flex justify-between">
+
+<span>Security Score</span>
+
+<span class="text-green-400 font-bold">
+
+91%
+
+</span>
+
+</div>
+
+<hr class="border-slate-700">
+
+<div class="font-mono text-sm space-y-2 text-slate-400">
+
+<p>> Initializing Scan Engine...</p>
+
+<p>> Checking Security Headers...</p>
+
+<p>> Detecting SQL Injection...</p>
+
+<p>> Analyzing XSS...</p>
+
+<p>> Generating Security Report...</p>
+
+</div>
+
+</div>
+
+</div>
+
+</div>
+
+</div>
+
+</div>
+
+</section>
+
+<!-- FEATURES -->
+
+<section id="features" class="pb-24">
+
+<div class="max-w-7xl mx-auto px-6">
+
+<h2 class="text-4xl font-bold text-center mb-16">
+
+Platform Features
+
+</h2>
+
+<div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+
+<div class="card-glass rounded-2xl p-8">
+<h3 class="text-cyan-400 text-xl font-bold mb-3">🛡 Security Headers</h3>
+<p class="text-slate-400">
+Checks HTTP security headers and configuration issues.
+</p>
+</div>
+
+<div class="card-glass rounded-2xl p-8">
+<h3 class="text-cyan-400 text-xl font-bold mb-3">💉 SQL Injection</h3>
+<p class="text-slate-400">
+Detect SQL injection vulnerabilities across web applications.
+</p>
+</div>
+
+<div class="card-glass rounded-2xl p-8">
+<h3 class="text-cyan-400 text-xl font-bold mb-3">⚡ XSS Detection</h3>
+<p class="text-slate-400">
+Identify reflected and stored Cross-Site Scripting issues.
+</p>
+</div>
+
+<div class="card-glass rounded-2xl p-8">
+<h3 class="text-cyan-400 text-xl font-bold mb-3">🤖 AI Analysis</h3>
+<p class="text-slate-400">
+Receive intelligent recommendations to improve website security.
+</p>
+</div>
+
+<div class="card-glass rounded-2xl p-8">
+<h3 class="text-cyan-400 text-xl font-bold mb-3">📄 PDF Reports</h3>
+<p class="text-slate-400">
+Generate professional vulnerability reports with one click.
+</p>
+</div>
+
+<div class="card-glass rounded-2xl p-8">
+<h3 class="text-cyan-400 text-xl font-bold mb-3">📊 Security Score</h3>
+<p class="text-slate-400">
+Monitor website health with an overall security rating.
+</p>
+</div>
+
+</div>
+
+</div>
+
+</section>
+
+{% endblock %}
