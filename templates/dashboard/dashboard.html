@@ -253,7 +253,8 @@
                         <span class="text-sm font-medium text-slate-200">{{ user.full_name }}</span>
                         <div class="avatar-ring w-8 h-8">
                             <div class="avatar-core w-full h-full rounded-full flex items-center justify-center">
-                                <span class="font-display text-[11px] font-semibold text-cyan">{{ user.full_name|first|upper }}</span>
+                                <span class="font-display text-[11px] font-semibold text-cyan">{{
+                                    user.full_name|first|upper }}</span>
                             </div>
                         </div>
                     </div>
@@ -288,36 +289,43 @@
                 class="block px-3 py-2.5 rounded-lg text-sm text-slate-300 hover:bg-panelsoft">Pricing</a>
             <a href="#faq" class="block px-3 py-2.5 rounded-lg text-sm text-slate-300 hover:bg-panelsoft">FAQ</a>
             <div class="pt-3 mt-2 border-t border-line flex flex-col gap-3">
-    {% if request.session.user_id %}
-        <!-- MOBILE LOGGED-IN VIEW -->
-        <div class="flex items-center gap-2.5 px-3 py-2.5 text-slate-200 bg-panelsoft rounded-lg border border-line">
-            <!-- 1. Username first -->
-            <span class="text-sm font-medium truncate flex-1">{{ user.full_name }}</span>
+                {% if request.session.user_id %}
+                <!-- MOBILE LOGGED-IN VIEW -->
+                <div
+                    class="flex items-center gap-2.5 px-3 py-2.5 text-slate-200 bg-panelsoft rounded-lg border border-line">
+                    <!-- 1. Username first -->
+                    <span class="text-sm font-medium truncate flex-1">{{ user.full_name }}</span>
 
-            <!-- 2. Profile icon second -->
-            <div class="avatar-ring w-8 h-8 shrink-0">
-                <div class="avatar-core w-full h-full rounded-full flex items-center justify-center">
-                    <span class="font-display text-[11px] font-semibold text-cyan">{{ user.full_name|first|upper }}</span>
+                    <!-- 2. Profile icon second -->
+                    <div class="avatar-ring w-8 h-8 shrink-0">
+                        <div class="avatar-core w-full h-full rounded-full flex items-center justify-center">
+                            <span class="font-display text-[11px] font-semibold text-cyan">{{ user.full_name|first|upper
+                                }}</span>
+                        </div>
+                    </div>
                 </div>
-            </div>
-        </div>
 
-        <!-- 3. Mobile Logout Button -->
-        <form action="{% url 'logout' %}" method="POST" class="m-0">
-            {% csrf_token %}
-            <button type="submit" class="w-full text-center px-4 py-2.5 text-sm font-medium text-crit border border-crit/30 rounded-lg transition bg-crit/10 hover:bg-crit/20">
-                Log out
-            </button>
-        </form>
-    
-    {% else %}
-        <!-- MOBILE LOGGED-OUT VIEW -->
-        <div class="flex flex-col gap-2">
-            <a href="{% url 'login' %}" class="text-center px-4 py-2.5 text-sm font-medium text-slate-300 border border-line rounded-lg hover:bg-panelsoft transition">Log in</a>
-            <a href="{% url 'register' %}" class="text-center px-4 py-2.5 text-sm font-semibold bg-cyan text-void rounded-lg hover:shadow-glow-cyan transition-shadow">Sign up free</a>
-        </div>
-    {% endif %}
-</div>
+                <!-- 3. Mobile Logout Button -->
+                <form action="{% url 'logout' %}" method="POST" class="m-0">
+                    {% csrf_token %}
+                    <button type="submit"
+                        class="w-full text-center px-4 py-2.5 text-sm font-medium text-crit border border-crit/30 rounded-lg transition bg-crit/10 hover:bg-crit/20">
+                        Log out
+                    </button>
+                </form>
+
+                {% else %}
+                <!-- MOBILE LOGGED-OUT VIEW -->
+                <div class="flex flex-col gap-2">
+                    <a href="{% url 'login' %}"
+                        class="text-center px-4 py-2.5 text-sm font-medium text-slate-300 border border-line rounded-lg hover:bg-panelsoft transition">Log
+                        in</a>
+                    <a href="{% url 'register' %}"
+                        class="text-center px-4 py-2.5 text-sm font-semibold bg-cyan text-void rounded-lg hover:shadow-glow-cyan transition-shadow">Sign
+                        up free</a>
+                </div>
+                {% endif %}
+            </div>
         </div>
     </header>
 
@@ -336,8 +344,10 @@
                 plain-English report your whole team can act on.
             </p>
 
-            <form class="mt-9 max-w-xl mx-auto flex flex-col sm:flex-row gap-3" onsubmit="event.preventDefault();">
-                <input type="text" placeholder="https://your-target.com" required
+            <form method="POST" action="{% url 'start_scan' %}"
+                class="mt-9 max-w-xl mx-auto flex flex-col sm:flex-row gap-3">
+                {% csrf_token %}
+                <input type="url" name="target_url" placeholder="https://your-target.com" required
                     class="flex-1 bg-panelsoft border border-line rounded-xl px-4 py-3.5 text-sm font-mono text-slate-100 placeholder-slate-500 focus:outline-none focus:border-cyan focus:shadow-glow-cyan transition" />
                 <button type="submit"
                     class="shrink-0 bg-cyan text-void font-semibold text-sm rounded-xl px-6 py-3.5 hover:shadow-glow-cyan transition-shadow">

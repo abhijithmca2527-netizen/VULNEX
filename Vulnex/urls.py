@@ -10,6 +10,7 @@ urlpatterns = [
     path('', home, name='home'),
     path('admin/', admin.site.urls),
     path('', include('users.urls')),
+    path('', include('websites.urls')),
     path('dashboard/', views.dashboard_view, name='dashboard'),
     path('scan/<int:website_id>/', views.start_scan_view, name='start_scan'),
 ]

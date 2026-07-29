@@ -1,15 +1,24 @@
 from celery import shared_task
-import time
+from .feature_extractor import VulnexFeatureExtractor
 
 @shared_task
-def run_vulnex_scan(website_url, scan_id):
+def run_vulnex_scan(target_url, scan_id=1):
     """
-    Background task to scan the website without freezing the UI.
+    Asynchronous Celery task that executes the AI Feature Extractor 
+    against a target URL.
     """
-    print(f"[VULNEX] Starting background scan for: {website_url}")
+    print(f"\n[VULNEX CELERY] Received background scan request #{scan_id} for: {target_url}")
     
-    # Simulate a 5-second scan for Phase 1 testing
-    time.sleep(5) 
+    # 1. Instantiate the extractor
+    extractor = VulnexFeatureExtractor(timeout=5)
     
-    print(f"[VULNEX] Scan complete for Scan ID: {scan_id}!")
-    return True 
+    # 2. Run the real probe
+    results = extractor.extract_features(target_url)
+    
+    # 3. Log the extracted vector in the Celery worker terminal
+    print(f"[VULNEX CELERY] Scan #{scan_id} Complete!")
+    print(f"[VULNEX CELERY] Extracted Vector: {results['feature_vector']}")
+    print(f"[VULNEX CELERY] Summary: {results['vulnerability_dict']}\n")
+    
+    # Return the dictionary so Celery stores the result state
+    return results
