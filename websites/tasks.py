@@ -1,24 +1,26 @@
 from celery import shared_task
 from .feature_extractor import VulnexFeatureExtractor
+from .ml_engine import VulnexAIEngine
 
 @shared_task
 def run_vulnex_scan(target_url, scan_id=1):
-    """
-    Asynchronous Celery task that executes the AI Feature Extractor 
-    against a target URL.
-    """
-    print(f"\n[VULNEX CELERY] Received background scan request #{scan_id} for: {target_url}")
+    print(f"\n[VULNEX] Scanning: {target_url}")
     
-    # 1. Instantiate the extractor
+    # 1. Feature Extraction (What you already finished!)
     extractor = VulnexFeatureExtractor(timeout=5)
+    extracted_data = extractor.extract_features(target_url)
+    binary_vector = extracted_data['feature_vector']
     
-    # 2. Run the real probe
-    results = extractor.extract_features(target_url)
+    # 2. AI Prediction (The New Step!)
+    ai_engine = VulnexAIEngine()
+    ai_results = ai_engine.predict_risk(binary_vector)
     
-    # 3. Log the extracted vector in the Celery worker terminal
-    print(f"[VULNEX CELERY] Scan #{scan_id} Complete!")
-    print(f"[VULNEX CELERY] Extracted Vector: {results['feature_vector']}")
-    print(f"[VULNEX CELERY] Summary: {results['vulnerability_dict']}\n")
+    # 3. Print the final results to Celery
+    print(f"[VULNEX] Vector: {binary_vector}")
+    print(f"[VULNEX AI] Risk Level: {ai_results['risk_level']} (Confidence: {ai_results['confidence']}%)")
+    print(f"[VULNEX] Scan Complete!\n")
     
-    # Return the dictionary so Celery stores the result state
-    return results
+    return {
+        "vector": binary_vector,
+        "ai_prediction": ai_results
+    }

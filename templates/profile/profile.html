@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Profile & Account — VulnEx</title>
+
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        colors: {
+          void: '#030712',
+          panel: '#0F172A',
+          panelsoft: '#131C31',
+          line: '#1E293B',
+          cyan: { DEFAULT: '#22D3EE' },
+          violet: { DEFAULT: '#7C3AED' },
+          crit: '#F43F5E', high: '#FB923C', med: '#FACC15', low: '#34D399'
+        },
+        fontFamily: {
+          display: ['"Space Grotesk"', 'sans-serif'],
+          body: ['"Inter"', 'sans-serif'],
+          mono: ['"JetBrains Mono"', 'monospace']
+        },
+        boxShadow: {
+          'glow-cyan': '0 0 0 1px rgba(34,211,238,0.4), 0 0 24px rgba(34,211,238,0.25)',
+          'glow-violet': '0 0 0 1px rgba(124,58,237,0.4), 0 0 24px rgba(124,58,237,0.25)'
+        }
+      }
+    }
+  }
+</script>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+<style>
+  body { background-color: #030712; }
+  ::-webkit-scrollbar { width: 8px; height: 8px; }
+  ::-webkit-scrollbar-track { background: #030712; }
+  ::-webkit-scrollbar-thumb { background: #1E293B; border-radius: 4px; }
+  ::-webkit-scrollbar-thumb:hover { background: #22D3EE55; }
+
+  .field-glow:focus {
+    outline: none; border-color: #22D3EE;
+    box-shadow: 0 0 0 1px rgba(34,211,238,0.5), 0 0 18px rgba(34,211,238,0.25);
+  }
+  .field-error { border-color: #F43F5E !important; }
+  .field-error:focus { box-shadow: 0 0 0 1px rgba(244,63,94,0.5), 0 0 18px rgba(244,63,94,0.2) !important; }
+
+  .heat-cell { width: 11px; height: 11px; border-radius: 3px; background: #1E293B; cursor: pointer; transition: transform 0.1s ease; }
+  .heat-cell:hover { transform: scale(1.35); }
+
+  #toast { transition: opacity 0.3s ease, transform 0.3s ease; }
+  #toast.hidden-toast { opacity: 0; transform: translateY(8px); pointer-events: none; }
+
+  .severity-dot { box-shadow: 0 0 8px currentColor; }
+
+  .tab-btn.active { color: #22D3EE; border-color: #22D3EE; }
+</style>
+</head>
+
+<body class="font-body text-slate-200 antialiased">
+
+<div class="min-h-screen lg:flex">
+
+  <!-- Mobile top bar -->
+  <div class="lg:hidden flex items-center justify-between px-4 py-3 border-b border-line bg-panel/80 backdrop-blur sticky top-0 z-30">
+    <a href="index.html" class="flex items-center gap-2">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" class="text-cyan"><path d="M12 2L3 6v6c0 5 3.8 8.7 9 10 5.2-1.3 9-5 9-10V6l-9-4z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M9 12l2 2 4-4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <span class="font-display font-semibold text-white">Vuln<span class="text-cyan">Ex</span></span>
+    </a>
+    <button onclick="document.getElementById('sidebar').classList.toggle('hidden')" class="text-slate-300 p-1.5 rounded-md border border-line">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M4 6h16M4 12h16M4 18h16" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    </button>
+  </div>
+
+  <!-- Sidebar -->
+  <aside id="sidebar" class="hidden lg:flex flex-col w-64 shrink-0 bg-panel border-r border-line px-4 py-6">
+    <a href="index.html" class="flex items-center gap-2 px-2 mb-8">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" class="text-cyan"><path d="M12 2L3 6v6c0 5 3.8 8.7 9 10 5.2-1.3 9-5 9-10V6l-9-4z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M9 12l2 2 4-4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <span class="font-display font-semibold text-lg text-white">Vuln<span class="text-cyan">Ex</span></span>
+    </a>
+
+    <nav class="flex-1 space-y-1">
+      <a href="index.html" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-400 hover:bg-panelsoft hover:text-slate-200 transition">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="1.8"/><path d="M21 21l-4.35-4.35" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+        Scan
+      </a>
+      <a href="#" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-400 hover:bg-panelsoft hover:text-slate-200 transition">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none"><path d="M12 8v4l3 2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.8"/></svg>
+        History
+      </a>
+      <a href="#" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-400 hover:bg-panelsoft hover:text-slate-200 transition">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none"><path d="M7 3h8l4 4v14H7z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M9 12h6M9 16h6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+        Reports
+      </a>
+      <a href="#" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium bg-panelsoft text-cyan border border-cyan/30">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.8"/><path d="M19.4 13a7.9 7.9 0 000-2l2-1.5-2-3.4-2.4 1a8 8 0 00-1.7-1L15 3h-4l-.3 2.6a8 8 0 00-1.7 1l-2.4-1-2 3.4L6.6 11a7.9 7.9 0 000 2l-2 1.5 2 3.4 2.4-1a8 8 0 001.7 1L11 21h4l.3-2.6a8 8 0 001.7-1l2.4 1 2-3.4L19.4 13z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></svg>
+        Settings
+      </a>
+    </nav>
+
+    <div class="border-t border-line pt-4 mt-4">
+      <div class="flex items-center gap-3 px-2">
+        <div class="w-8 h-8 rounded-full bg-gradient-to-br from-cyan to-violet flex items-center justify-center text-xs font-semibold text-white">JD</div>
+        <div class="flex-1 min-w-0">
+          <p class="text-sm font-medium text-slate-200 truncate">Jane Doe</p>
+          <p class="text-xs text-slate-500 truncate">jane@company.com</p>
+        </div>
+        <a href="login.html" title="Log out" class="text-slate-500 hover:text-cyan">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </a>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <main class="flex-1 min-w-0 px-5 py-6 sm:px-8 sm:py-8 max-w-6xl">
+
+    <div class="mb-8">
+      <h1 class="font-display text-2xl font-semibold text-white">Profile &amp; account</h1>
+      <p class="text-sm text-slate-400 mt-1">Manage your details and review scan history per website.</p>
+    </div>
+
+    <div class="grid lg:grid-cols-3 gap-6 mb-10">
+
+      <!-- Left: profile + password -->
+      <div class="lg:col-span-2 space-y-6">
+
+        <!-- Edit profile card -->
+        <div class="bg-panel border border-line rounded-2xl p-6">
+          <div class="flex items-center gap-4 mb-6">
+            <div class="w-14 h-14 rounded-full bg-gradient-to-br from-cyan to-violet flex items-center justify-center text-lg font-semibold text-white shrink-0" id="avatar-initials">JD</div>
+            <div class="min-w-0">
+              <h2 class="font-display font-semibold text-white">Personal information</h2>
+              <p class="text-xs text-slate-500">Update your display name below</p>
+            </div>
+          </div>
+
+          <form onsubmit="return saveProfile(event)" class="space-y-4">
+            <div>
+              <label class="block text-xs font-medium text-slate-400 mb-1.5" for="profile-name">Full name</label>
+              <input id="profile-name" type="text" value="Jane Doe" required
+                class="field-glow w-full bg-panelsoft border border-line rounded-lg px-3.5 py-2.5 text-sm text-slate-100 transition" />
+            </div>
+
+            <div>
+              <label class="block text-xs font-medium text-slate-400 mb-1.5">Email address</label>
+              <div class="flex items-center justify-between gap-3 bg-panelsoft/60 border border-line rounded-lg px-3.5 py-2.5">
+                <span class="text-sm text-slate-400 font-mono truncate">jane@company.com</span>
+                <span class="shrink-0 text-[10px] uppercase tracking-wider text-slate-500 bg-void border border-line px-2 py-0.5 rounded-full">Verified</span>
+              </div>
+              <p class="text-xs text-slate-500 mt-1.5">Your email can't be changed here — contact support to update it.</p>
+            </div>
+
+            <button type="submit" class="bg-cyan text-void font-semibold text-sm rounded-lg px-5 py-2.5 hover:shadow-glow-cyan transition-shadow">
+              Save changes
+            </button>
+          </form>
+        </div>
+
+        <!-- Change password card -->
+        <div class="bg-panel border border-line rounded-2xl p-6">
+          <h2 class="font-display font-semibold text-white mb-1">Change password</h2>
+          <p class="text-xs text-slate-500 mb-6">Use at least 8 characters, with a mix of letters and numbers.</p>
+
+          <form onsubmit="return savePassword(event)" class="space-y-4" novalidate>
+            <div>
+              <label class="block text-xs font-medium text-slate-400 mb-1.5" for="current-password">Current password</label>
+              <input id="current-password" type="password" required placeholder="••••••••••"
+                class="field-glow w-full bg-panelsoft border border-line rounded-lg px-3.5 py-2.5 text-sm text-slate-100 placeholder-slate-500 transition" />
+              <p class="hidden text-xs text-crit mt-1.5" data-error-for="current-password">Enter your current password.</p>
+            </div>
+
+            <div>
+              <label class="block text-xs font-medium text-slate-400 mb-1.5" for="new-password">New password</label>
+              <input id="new-password" type="password" placeholder="At least 8 characters" oninput="updateStrength()"
+                class="field-glow w-full bg-panelsoft border border-line rounded-lg px-3.5 py-2.5 text-sm text-slate-100 placeholder-slate-500 transition" />
+              <div class="flex gap-1 mt-2">
+                <span class="h-1 flex-1 rounded-full bg-line" data-bar="1"></span>
+                <span class="h-1 flex-1 rounded-full bg-line" data-bar="2"></span>
+                <span class="h-1 flex-1 rounded-full bg-line" data-bar="3"></span>
+                <span class="h-1 flex-1 rounded-full bg-line" data-bar="4"></span>
+              </div>
+              <p class="text-xs text-slate-500 mt-1.5" id="strength-label">Password strength</p>
+              <p class="hidden text-xs text-crit mt-1.5" data-error-for="new-password">Password must be at least 8 characters.</p>
+            </div>
+
+            <div>
+              <label class="block text-xs font-medium text-slate-400 mb-1.5" for="confirm-password">Confirm new password</label>
+              <input id="confirm-password" type="password" placeholder="Repeat new password"
+                class="field-glow w-full bg-panelsoft border border-line rounded-lg px-3.5 py-2.5 text-sm text-slate-100 placeholder-slate-500 transition" />
+              <p class="hidden text-xs text-crit mt-1.5" data-error-for="confirm-password">Passwords don't match.</p>
+            </div>
+
+            <button type="submit" class="bg-violet text-white font-semibold text-sm rounded-lg px-5 py-2.5 hover:shadow-glow-violet transition-shadow">
+              Update password
+            </button>
+          </form>
+        </div>
+      </div>
+
+      <!-- Right: account summary -->
+      <div class="space-y-6">
+        <div class="bg-panel border border-line rounded-2xl p-6">
+          <h2 class="font-display font-semibold text-white mb-4">Account summary</h2>
+          <dl class="space-y-3.5 text-sm">
+            <div class="flex items-center justify-between">
+              <dt class="text-slate-500">Member since</dt>
+              <dd class="text-slate-200 font-mono text-xs">Feb 2025</dd>
+            </div>
+            <div class="flex items-center justify-between">
+              <dt class="text-slate-500">Plan</dt>
+              <dd><span class="text-xs px-2 py-1 rounded-md bg-cyan/10 text-cyan border border-cyan/30">Pro</span></dd>
+            </div>
+            <div class="flex items-center justify-between">
+              <dt class="text-slate-500">Total scans</dt>
+              <dd class="text-slate-200 font-mono text-xs">128</dd>
+            </div>
+            <div class="flex items-center justify-between">
+              <dt class="text-slate-500">Websites tracked</dt>
+              <dd class="text-slate-200 font-mono text-xs">4</dd>
+            </div>
+          </dl>
+        </div>
+
+        <div class="bg-panel border border-line rounded-2xl p-6">
+          <h2 class="font-display font-semibold text-white mb-3">Overall security score</h2>
+          <div class="flex items-end gap-2">
+            <span class="font-display text-4xl font-semibold text-low">87</span>
+            <span class="text-slate-500 text-sm mb-1">/ 100</span>
+          </div>
+          <p class="text-xs text-slate-500 mt-2">Average across all tracked websites, last 30 days.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Scan history -->
+    <div class="mb-3 flex flex-wrap items-center justify-between gap-3">
+      <div>
+        <h2 class="font-display text-xl font-semibold text-white">Scan history</h2>
+        <p class="text-sm text-slate-400 mt-1">Daily security score per website, over the last 6 months.</p>
+      </div>
+      <select id="site-select" onchange="renderAll()"
+        class="field-glow bg-panelsoft border border-line rounded-lg px-3.5 py-2 text-sm font-mono text-slate-200">
+        <option value="api.acmeshop.com">api.acmeshop.com</option>
+        <option value="staging.devkit.io">staging.devkit.io</option>
+        <option value="portal.northbridge.net">portal.northbridge.net</option>
+        <option value="cdn.lumaassets.com">cdn.lumaassets.com</option>
+      </select>
+    </div>
+
+    <!-- Trend graph -->
+    <div class="bg-panel border border-line rounded-2xl p-5 sm:p-6 mb-6">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="text-sm font-semibold text-slate-300">Security score trend</h3>
+        <div class="flex items-center gap-4 text-xs text-slate-500">
+          <span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-cyan severity-dot"></span>Score</span>
+        </div>
+      </div>
+      <canvas id="trend-canvas" class="w-full" height="220"></canvas>
+    </div>
+
+    <!-- Calendar heatmap -->
+    <div class="bg-panel border border-line rounded-2xl p-5 sm:p-6 mb-6 overflow-x-auto">
+      <div class="flex items-center justify-between mb-4 min-w-[640px]">
+        <h3 class="text-sm font-semibold text-slate-300">Daily scan calendar</h3>
+        <div class="flex items-center gap-2 text-xs text-slate-500">
+          <span>Riskier</span>
+          <span class="w-2.5 h-2.5 rounded-sm" style="background:#F43F5E"></span>
+          <span class="w-2.5 h-2.5 rounded-sm" style="background:#FB923C"></span>
+          <span class="w-2.5 h-2.5 rounded-sm" style="background:#FACC15"></span>
+          <span class="w-2.5 h-2.5 rounded-sm" style="background:#22D3EE"></span>
+          <span class="w-2.5 h-2.5 rounded-sm" style="background:#34D399"></span>
+          <span>Safer</span>
+        </div>
+      </div>
+      <div id="heatmap-months" class="flex gap-[3px] text-[10px] text-slate-500 mb-1 min-w-[640px] pl-6"></div>
+      <div class="flex gap-[3px] min-w-[640px]">
+        <div id="heatmap-days" class="flex flex-col gap-[3px] text-[10px] text-slate-500 pr-1 justify-between pt-[2px]">
+          <span>Mon</span><span></span><span>Wed</span><span></span><span>Fri</span><span></span><span></span>
+        </div>
+        <div id="heatmap-grid" class="flex gap-[3px]"></div>
+      </div>
+    </div>
+
+    <!-- Recent scans table -->
+    <div class="bg-panel border border-line rounded-xl overflow-hidden mb-10">
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm min-w-[520px]">
+          <thead>
+            <tr class="text-left text-xs text-slate-500 uppercase tracking-wider border-b border-line">
+              <th class="px-4 py-3 font-medium">Date</th>
+              <th class="px-4 py-3 font-medium">Security score</th>
+              <th class="px-4 py-3 font-medium">Findings</th>
+              <th class="px-4 py-3 font-medium">Status</th>
+            </tr>
+          </thead>
+          <tbody id="history-table-body" class="divide-y divide-line"></tbody>
+        </table>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- Toast -->
+<div id="toast" class="hidden-toast fixed bottom-6 right-6 bg-panel border border-low/40 text-slate-100 text-sm px-4 py-3 rounded-lg shadow-2xl flex items-center gap-2 z-50">
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" class="text-low"><path d="M20 6L9 17l-5-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  <span id="toast-text">Saved successfully</span>
+</div>
+
+<script>
+  /* ---------- Toast ---------- */
+  function showToast(text) {
+    const toast = document.getElementById('toast');
+    document.getElementById('toast-text').textContent = text;
+    toast.classList.remove('hidden-toast');
+    clearTimeout(window.__toastTimer);
+    window.__toastTimer = setTimeout(() => toast.classList.add('hidden-toast'), 2600);
+  }
+
+  /* ---------- Profile form ---------- */
+  function saveProfile(e) {
+    e.preventDefault();
+    const name = document.getElementById('profile-name').value.trim();
+    if (!name) return false;
+    const initials = name.split(' ').filter(Boolean).slice(0, 2).map(w => w[0].toUpperCase()).join('');
+    document.getElementById('avatar-initials').textContent = initials || 'JD';
+    showToast('Profile updated');
+    return false;
+  }
+
+  /* ---------- Password form ---------- */
+  function setFieldError(inputEl, hasError) {
+    const msg = document.querySelector(`[data-error-for="${inputEl.id}"]`);
+    inputEl.classList.toggle('field-error', hasError);
+    if (msg) msg.classList.toggle('hidden', !hasError);
+  }
+
+  function passwordScore(pw) {
+    let score = 0;
+    if (pw.length >= 8) score++;
+    if (/[A-Z]/.test(pw) && /[a-z]/.test(pw)) score++;
+    if (/\d/.test(pw)) score++;
+    if (/[^A-Za-z0-9]/.test(pw)) score++;
+    return score;
+  }
+
+  function updateStrength() {
+    const pw = document.getElementById('new-password').value;
+    const score = pw.length ? passwordScore(pw) : 0;
+    const bars = document.querySelectorAll('[data-bar]');
+    const colors = ['bg-crit', 'bg-high', 'bg-med', 'bg-low'];
+    const labels = ['Password strength', 'Weak', 'Fair', 'Good', 'Strong'];
+    bars.forEach((bar, i) => {
+      bar.className = 'h-1 flex-1 rounded-full ' + (i < score ? colors[Math.min(score, 4) - 1] : 'bg-line');
+    });
+    document.getElementById('strength-label').textContent = labels[score];
+  }
+
+  function savePassword(e) {
+    e.preventDefault();
+    const current = document.getElementById('current-password');
+    const next = document.getElementById('new-password');
+    const confirm = document.getElementById('confirm-password');
+
+    const currentValid = current.value.length > 0;
+    const nextValid = next.value.length >= 8;
+    const confirmValid = confirm.value.length > 0 && confirm.value === next.value;
+
+    setFieldError(current, !currentValid);
+    setFieldError(next, !nextValid);
+    setFieldError(confirm, !confirmValid);
+
+    if (!currentValid || !nextValid || !confirmValid) return false;
+
+    showToast('Password updated');
+    current.value = ''; next.value = ''; confirm.value = '';
+    updateStrength();
+    return false;
+  }
+
+  ['current-password', 'new-password', 'confirm-password'].forEach(id => {
+    document.getElementById(id).addEventListener('input', function () {
+      if (this.classList.contains('field-error')) setFieldError(this, false);
+    });
+  });
+
+  /* ---------- Mock scan history data ---------- */
+  const DAYS = 182; // ~6 months
+  const siteSeeds = {
+    'api.acmeshop.com': 11,
+    'staging.devkit.io': 42,
+    'portal.northbridge.net': 77,
+    'cdn.lumaassets.com': 23
+  };
+
+  function mulberry32(seed) {
+    return function () {
+      seed |= 0; seed = (seed + 0x6D2B79F5) | 0;
+      let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+
+  function generateHistory(site) {
+    const rand = mulberry32(siteSeeds[site] || 1);
+    const data = [];
+    let score = 70 + Math.floor(rand() * 20);
+    const today = new Date();
+
+    for (let i = DAYS - 1; i >= 0; i--) {
+      const date = new Date(today);
+      date.setDate(date.getDate() - i);
+
+      // Not every day has a scan
+      const hasScan = rand() > 0.55;
+      if (hasScan) {
+        const drift = Math.round((rand() - 0.45) * 10);
+        score = Math.max(38, Math.min(99, score + drift));
+      }
+      data.push({ date, score: hasScan ? score : null, hasScan });
+    }
+    return data;
+  }
+
+  function scoreColor(score) {
+    if (score === null || score === undefined) return '#1E293B';
+    if (score < 60) return '#F43F5E';
+    if (score < 75) return '#FB923C';
+    if (score < 85) return '#FACC15';
+    if (score < 95) return '#22D3EE';
+    return '#34D399';
+  }
+
+  function scoreLabel(score) {
+    if (score === null) return 'No scan';
+    if (score < 60) return 'At risk';
+    if (score < 75) return 'Needs attention';
+    if (score < 85) return 'Fair';
+    if (score < 95) return 'Good';
+    return 'Excellent';
+  }
+
+  const monthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+  /* ---------- Calendar heatmap ---------- */
+  function renderHeatmap(data) {
+    const grid = document.getElementById('heatmap-grid');
+    const monthsRow = document.getElementById('heatmap-months');
+    grid.innerHTML = '';
+    monthsRow.innerHTML = '';
+
+    // Pad so the first column starts on a Monday
+    const first = data[0].date;
+    const firstDay = (first.getDay() + 6) % 7; // 0=Mon
+    const padded = Array(firstDay).fill(null).concat(data);
+
+    const weeks = [];
+    for (let i = 0; i < padded.length; i += 7) weeks.push(padded.slice(i, i + 7));
+
+    let lastMonth = null;
+    weeks.forEach(week => {
+      const col = document.createElement('div');
+      col.className = 'flex flex-col gap-[3px]';
+
+      const firstReal = week.find(d => d);
+      let label = '';
+      if (firstReal && firstReal.date.getMonth() !== lastMonth && firstReal.date.getDate() <= 7) {
+        label = monthNames[firstReal.date.getMonth()];
+        lastMonth = firstReal.date.getMonth();
+      }
+      const monthLabel = document.createElement('span');
+      monthLabel.style.width = '11px';
+      monthLabel.textContent = label;
+      monthsRow.appendChild(monthLabel);
+
+      week.forEach(day => {
+        const cell = document.createElement('div');
+        if (!day) {
+          cell.className = 'heat-cell opacity-0 pointer-events-none';
+        } else {
+          cell.className = 'heat-cell';
+          cell.style.background = scoreColor(day.score);
+          const dateStr = day.date.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+          cell.title = day.hasScan
+            ? `${dateStr} — ${day.score}/100 (${scoreLabel(day.score)})`
+            : `${dateStr} — no scan run`;
+        }
+        col.appendChild(cell);
+      });
+      grid.appendChild(col);
+    });
+  }
+
+  /* ---------- Trend line chart (canvas) ---------- */
+  function renderTrendChart(data) {
+    const canvas = document.getElementById('trend-canvas');
+    const dpr = window.devicePixelRatio || 1;
+    const cssWidth = canvas.parentElement.clientWidth - 4;
+    const cssHeight = 220;
+    canvas.width = cssWidth * dpr;
+    canvas.height = cssHeight * dpr;
+    canvas.style.width = cssWidth + 'px';
+    canvas.style.height = cssHeight + 'px';
+    const ctx = canvas.getContext('2d');
+    ctx.scale(dpr, dpr);
+    ctx.clearRect(0, 0, cssWidth, cssHeight);
+
+    const points = data.filter(d => d.hasScan).slice(-45); // last ~45 scans
+    if (points.length < 2) return;
+
+    const padL = 32, padR = 12, padT = 12, padB = 24;
+    const w = cssWidth - padL - padR;
+    const h = cssHeight - padT - padB;
+
+    // Gridlines + y labels
+    ctx.strokeStyle = '#1E293B';
+    ctx.fillStyle = '#64748B';
+    ctx.font = '10px Inter, sans-serif';
+    ctx.textAlign = 'right';
+    ctx.textBaseline = 'middle';
+    [0, 25, 50, 75, 100].forEach(v => {
+      const y = padT + h - (v / 100) * h;
+      ctx.beginPath();
+      ctx.moveTo(padL, y);
+      ctx.lineTo(padL + w, y);
+      ctx.stroke();
+      ctx.fillText(v, padL - 8, y);
+    });
+
+    // Line
+    const stepX = w / (points.length - 1);
+    ctx.beginPath();
+    points.forEach((p, i) => {
+      const x = padL + i * stepX;
+      const y = padT + h - (p.score / 100) * h;
+      if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+    });
+    const gradient = ctx.createLinearGradient(0, padT, 0, padT + h);
+    gradient.addColorStop(0, '#22D3EE');
+    gradient.addColorStop(1, '#7C3AED');
+    ctx.strokeStyle = gradient;
+    ctx.lineWidth = 2;
+    ctx.lineJoin = 'round';
+    ctx.stroke();
+
+    // Fill under line
+    ctx.lineTo(padL + (points.length - 1) * stepX, padT + h);
+    ctx.lineTo(padL, padT + h);
+    ctx.closePath();
+    const fillGrad = ctx.createLinearGradient(0, padT, 0, padT + h);
+    fillGrad.addColorStop(0, 'rgba(34,211,238,0.18)');
+    fillGrad.addColorStop(1, 'rgba(34,211,238,0)');
+    ctx.fillStyle = fillGrad;
+    ctx.fill();
+
+    // Points
+    points.forEach((p, i) => {
+      const x = padL + i * stepX;
+      const y = padT + h - (p.score / 100) * h;
+      ctx.beginPath();
+      ctx.arc(x, y, 2.5, 0, Math.PI * 2);
+      ctx.fillStyle = scoreColor(p.score);
+      ctx.fill();
+    });
+
+    // X labels (first, middle, last)
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'top';
+    [0, Math.floor(points.length / 2), points.length - 1].forEach(i => {
+      const x = padL + i * stepX;
+      const label = points[i].date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+      ctx.fillText(label, x, padT + h + 8);
+    });
+  }
+
+  /* ---------- Recent scans table ---------- */
+  function renderTable(data) {
+    const body = document.getElementById('history-table-body');
+    const recent = data.filter(d => d.hasScan).slice(-8).reverse();
+    body.innerHTML = recent.map(d => {
+      const color = scoreColor(d.score);
+      const label = scoreLabel(d.score);
+      const findings = Math.max(0, Math.round((100 - d.score) / 8));
+      const statusGood = d.score >= 85;
+      return `
+        <tr class="hover:bg-panelsoft/60 transition">
+          <td class="px-4 py-3.5 text-slate-500 font-mono text-xs">${d.date.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}</td>
+          <td class="px-4 py-3.5">
+            <span class="inline-flex items-center gap-1.5 text-xs font-medium" style="color:${color}">
+              <span class="w-1.5 h-1.5 rounded-full severity-dot" style="background:${color};color:${color}"></span>
+              ${d.score}/100 · ${label}
+            </span>
+          </td>
+          <td class="px-4 py-3.5 text-slate-400">${findings} open</td>
+          <td class="px-4 py-3.5">
+            <span class="text-xs px-2 py-1 rounded-md ${statusGood ? 'bg-low/10 text-low border border-low/30' : 'bg-cyan/10 text-cyan border border-cyan/30'}">
+              ${statusGood ? 'Complete' : 'Reviewing'}
+            </span>
+          </td>
+        </tr>`;
+    }).join('');
+  }
+
+  /* ---------- Orchestration ---------- */
+  function renderAll() {
+    const site = document.getElementById('site-select').value;
+    const data = generateHistory(site);
+    renderHeatmap(data);
+    renderTrendChart(data);
+    renderTable(data);
+  }
+
+  window.addEventListener('resize', () => {
+    const site = document.getElementById('site-select').value;
+    renderTrendChart(generateHistory(site));
+  });
+
+  renderAll();
+</script>
+
+</body>
+</html>

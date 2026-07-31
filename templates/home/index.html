@@ -149,8 +149,8 @@ transform-origin: center top;
       </nav>
 
       <div class="hidden lg:flex items-center gap-2">
-        <a href="login.html" class="px-4 py-2 text-sm font-medium text-slate-300 hover:text-white transition">Log in</a>
-        <a href="register.html" class="px-4 py-2 text-sm font-semibold bg-cyan text-void rounded-lg hover:shadow-glow-cyan transition-shadow">Sign up free</a>
+        <a href="{% url 'login' %}" class="px-4 py-2 text-sm font-medium text-slate-300 hover:text-white transition">Log in</a>
+        <a href="{% url 'register' %}" class="px-4 py-2 text-sm font-semibold bg-cyan text-void rounded-lg hover:shadow-glow-cyan transition-shadow">Sign up free</a>
       </div>
 
       <button onclick="toggleMobileNav()" class="lg:hidden text-slate-300 p-2">

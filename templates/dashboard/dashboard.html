@@ -249,15 +249,16 @@
                 </nav>
                 <div class="hidden lg:flex items-center gap-4">
                     <!-- Username + Profile Icon -->
-                    <div class="flex items-center gap-2.5 pr-4 border-r border-line">
+                    <a href="{% url 'profile' %}"
+                        class="flex items-center gap-2.5 pr-4 border-r border-line hover:opacity-80 transition-opacity">
                         <span class="text-sm font-medium text-slate-200">{{ user.full_name }}</span>
                         <div class="avatar-ring w-8 h-8">
                             <div class="avatar-core w-full h-full rounded-full flex items-center justify-center">
-                                <span class="font-display text-[11px] font-semibold text-cyan">{{
-                                    user.full_name|first|upper }}</span>
+                                <!-- Avatar image or placeholder goes here -->
                             </div>
                         </div>
-                    </div>
+                    </a>
+
 
                     <!-- Logout Button (Uses a POST form for Django security) -->
                     <form action="{% url 'logout' %}" method="POST" class="m-0">
@@ -291,19 +292,16 @@
             <div class="pt-3 mt-2 border-t border-line flex flex-col gap-3">
                 {% if request.session.user_id %}
                 <!-- MOBILE LOGGED-IN VIEW -->
-                <div
-                    class="flex items-center gap-2.5 px-3 py-2.5 text-slate-200 bg-panelsoft rounded-lg border border-line">
-                    <!-- 1. Username first -->
-                    <span class="text-sm font-medium truncate flex-1">{{ user.full_name }}</span>
-
-                    <!-- 2. Profile icon second -->
-                    <div class="avatar-ring w-8 h-8 shrink-0">
-                        <div class="avatar-core w-full h-full rounded-full flex items-center justify-center">
-                            <span class="font-display text-[11px] font-semibold text-cyan">{{ user.full_name|first|upper
-                                }}</span>
+                <a href="{% url 'profile' %}"
+                        class="flex items-center gap-2.5 pr-4 border-r border-line hover:opacity-80 transition-opacity">
+                        <span class="text-sm font-medium text-slate-200">{{ user.full_name }}</span>
+                        <div class="avatar-ring w-8 h-8">
+                            <div class="avatar-core w-full h-full rounded-full flex items-center justify-center">
+                                <!-- Avatar image or placeholder goes here -->
+                            </div>
                         </div>
-                    </div>
-                </div>
+                    </a>
+                
 
                 <!-- 3. Mobile Logout Button -->
                 <form action="{% url 'logout' %}" method="POST" class="m-0">

@@ -6,7 +6,7 @@ urlpatterns = [
     path("login/", views.login, name="login"),
     path("dashboard/", views.dashboard, name="dashboard"),
     path("logout/", views.logout, name="logout"),
-
+    path('profile/', views.profile_view, name='profile'),
     # OTP
     path("send-otp/", views.send_otp, name="send_otp"),
     path("verify-otp/", views.verify_otp, name="verify_otp"),

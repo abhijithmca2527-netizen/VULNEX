@@ -283,3 +283,7 @@ def logout(request):
     request.session.flush()
 
     return redirect("login")
+
+def profile_view(request):
+    """Renders the user profile page."""
+    return render(request, 'profile/profile.html')
