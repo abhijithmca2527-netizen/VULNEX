@@ -11,14 +11,10 @@ from django.contrib.auth.hashers import make_password, check_password
 from django.http import JsonResponse
 
 from .models import User
-from django.shortcuts import render
 
 load_dotenv()
 
 API_KEY = os.getenv("TWOFACTOR_API_KEY")
-
-
-
 
 
 def send_otp(request):
@@ -57,10 +53,10 @@ def verify_otp(request):
     return JsonResponse(data)
 
 
-
 # 1. Public Landing Page (Before Login)
 def landing_view(request):
     return render(request, 'home/index.html')
+
 
 # ==========================
 # Login
@@ -120,21 +116,9 @@ def logout(request):
     return redirect("login")
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+# ==========================
+# Register
+# ==========================
 def register(request):
 
     if request.method == "POST":
@@ -204,7 +188,7 @@ def register(request):
             messages.error(request, "Password must contain at least one special character.")
             return redirect("register")
 
-                # OTP Validation
+        # OTP Validation
         if not request.session.get("otp_verified", False):
             messages.error(request, "Please verify your mobile number first.")
             return redirect("register")
@@ -224,65 +208,9 @@ def register(request):
         request.session.pop("otp_verified", None)
 
         return redirect("login")
-    
+
     return render(request, "auth/register.html")
 
-# ==========================
-# Login
-# ==========================
-def login(request):
-
-    if request.method == "POST":
-
-        email = request.POST.get("email", "").strip().lower()
-        password = request.POST.get("password", "")
-
-        try:
-            user = User.objects.get(email=email)
-
-            if check_password(password, user.password):
-
-                request.session["user_id"] = user.id
-                request.session["user_name"] = user.full_name
-
-                return redirect("dashboard")
-
-            else:
-                messages.error(request, "Invalid password.")
-
-        except User.DoesNotExist:
-            messages.error(request, "Email not found.")
-
-    return render(request, "auth/login.html")
-
-
-# ==========================
-# Dashboard
-# ==========================
-def dashboard(request):
-
-    if "user_id" not in request.session:
-        return redirect("login")
-
-    user = User.objects.get(id=request.session["user_id"])
-
-    return render(
-        request,
-        "dashboard/dashboard.html",
-        {
-            "user": user
-        }
-    )
-
-
-# ==========================
-# Logout
-# ==========================
-def logout(request):
-
-    request.session.flush()
-
-    return redirect("login")
 
 def profile_view(request):
     """Renders the user profile page."""

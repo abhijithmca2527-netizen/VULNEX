@@ -21,9 +21,9 @@ h1,h2,h3{font-family:"Space Grotesk",sans-serif}
 <div class="max-w-7xl mx-auto px-8 h-16 flex items-center justify-between">
 <div class="text-2xl font-bold">Vuln<span class="text-cyan-400">Ex</span></div>
 <div class="space-x-6 text-slate-300">
-<a href="#" class="hover:text-white transition">Dashboard</a>
-<a href="#" class="hover:text-white transition">History</a>
-<a href="#" class="text-white font-medium">Reports</a>
+<a href="{% url 'dashboard' %}" class="hover:text-white transition">Dashboard</a>
+<a href="/history/" class="hover:text-white transition">History</a>
+<a href="/reports/" class="text-white font-medium">Reports</a>
 </div>
 </div>
 </nav>
