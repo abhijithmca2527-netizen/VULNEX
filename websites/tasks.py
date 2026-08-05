@@ -10,7 +10,6 @@ def run_vulnex_scan(target_url, scan_id=1):
     extractor = VulnexFeatureExtractor(timeout=5)
     extracted_data = extractor.extract_features(target_url)
     binary_vector = extracted_data['feature_vector']
-    
     # 2. AI Prediction (The New Step!)
     ai_engine = VulnexAIEngine()
     ai_results = ai_engine.predict_risk(binary_vector)

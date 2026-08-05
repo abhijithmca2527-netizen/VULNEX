@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>VulNex - Scanning in Progress...</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { background: #050816; color: #fff; }
+    </style>
+</head>
+<body class="flex items-center justify-center h-screen flex-col">
+    
+    <div class="text-center">
+        <!-- A cool pulsing loading circle -->
+        <div class="inline-block w-16 h-16 border-4 border-cyan-400 border-t-transparent rounded-full animate-spin mb-6"></div>
+        <h2 class="text-3xl font-bold font-mono">Scanning Target...</h2>
+        <p class="text-cyan-400 mt-2">{{ target_url }}</p>
+        <p class="text-slate-500 mt-4">Running 12-bit extraction and AI inference.</p>
+        <p class="text-slate-500 text-sm mt-1">This usually takes about 30 seconds.</p>
+    </div>
+
+    <script>
+        const taskId = "{{ task_id }}";
+        
+        // This function asks Django "Is the task done?"
+        function checkStatus() {
+            fetch(`/check-status/${taskId}/`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'SUCCESS') {
+                        // Task is done! Redirect automatically to the report page!
+                        window.location.href = `/report/${taskId}/`;
+                    } else if (data.status === 'FAILURE') {
+                        alert("Scan failed. Please try again.");
+                        window.location.href = "/";
+                    } else {
+                        // Still pending. Check again in 3 seconds.
+                        setTimeout(checkStatus, 3000);
+                    }
+                });
+        }
+
+        // Start the checking loop right away
+        checkStatus();
+    </script>
+</body>
+</html>

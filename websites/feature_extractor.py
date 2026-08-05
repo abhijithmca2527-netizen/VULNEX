@@ -1,139 +1,168 @@
 import requests
-import socket
 import ssl
-from urllib.parse import urlparse
-from bs4 import BeautifulSoup
+import socket
+import urllib.parse
+import urllib3
+
+# Suppress SSL warnings when inspecting unverified target certificates
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+
 
 class VulnexFeatureExtractor:
+
     def __init__(self, timeout=5):
         self.timeout = timeout
-        
-        # We are looking for these 8 specific security features.
-        # This will result in a binary vector of length 8.
-        self.feature_names = [
-            "missing_strict_transport_security",
-            "missing_x_frame_options",
-            "missing_x_content_type_options",
-            "missing_content_security_policy",
-            "server_header_exposed",
-            "x_powered_by_exposed",
-            "weak_ssl_certificate",
-            "directory_listing_exposed"
-        ]
-
-    def _check_ssl(self, hostname):
-        """Attempts to verify the SSL certificate of the target."""
-        try:
-            context = ssl.create_default_context()
-            with socket.create_connection((hostname, 443), timeout=self.timeout) as sock:
-                with context.wrap_socket(sock, server_hostname=hostname) as ssock:
-                    # If we successfully connect and wrap the socket, SSL is valid
-                    return 0 
-        except Exception:
-            # Any error (expired, mismatched hostname, no SSL) means it's weak/invalid
-            return 1
-
-    def _check_directory_listing(self, html_content):
-        """Uses BeautifulSoup to look for default Apache/Nginx directory indexes."""
-        if not html_content:
-            return 0
-        soup = BeautifulSoup(html_content, 'html.parser')
-        title = soup.title.string if soup.title else ""
-        
-        # Common signatures of exposed directories
-        if "Index of /" in title or "Directory Listing For" in title:
-            return 1
-        return 0
+        self.headers = {
+            'User-Agent': (
+                'Mozilla/5.0 (Windows NT 10.0; Win64; x64) '
+                'AppleWebKit/537.36 (KHTML, like Gecko) '
+                'Chrome/120.0.0.0 Safari/537.36'
+            )
+        }
 
     def extract_features(self, target_url):
         """
-        Probes the URL and returns a dictionary of vulnerabilities 
-        and the final binary vector.
+        Scans a target URL and returns a 12-bit binary feature vector 
+        matching the exact structure of vulnex_dataset.csv.
         """
-        # Ensure the URL is properly formatted
+        # Ensure scheme is prepended
         if not target_url.startswith(('http://', 'https://')):
             target_url = 'https://' + target_url
 
-        parsed_url = urlparse(target_url)
-        hostname = parsed_url.hostname
+        parsed_url = urllib.parse.urlparse(target_url)
+        domain = parsed_url.netloc or parsed_url.path
 
-        # Initialize our result dictionary with everything marked as secure (0)
-        vulnerabilities = {feature: 0 for feature in self.feature_names}
+        # Feature flags initialization (0 = Safe / False, 1 = Vulnerable / True)
+        missing_hsts = 0
+        missing_x_frame = 0
+        missing_x_content_type = 0
+        missing_csp = 0
+        exposed_server = 0
+        exposed_x_powered_by = 0
+        weak_ssl = 0
+        exposed_dir_listing = 0
+        missing_httponly = 0
+        missing_secure = 0
+        cors_wildcard = 0
+        outdated_cms = 0
 
+        # -------------------------------------------------------------
+        # 1. SSL/TLS Certificate Validation Check
+        # -------------------------------------------------------------
         try:
-            # 1. Probe the target (using a standard User-Agent to avoid basic blocks)
-            headers = {'User-Agent': 'VulnEx-Scanner/1.0 (MCA Project)'}
-            response = requests.get(target_url, headers=headers, timeout=self.timeout, verify=False)
-            
-            # Extract headers for analysis
-            resp_headers = {k.lower(): v.lower() for k, v in response.headers.items()}
+            ctx = ssl.create_default_context()
+            with socket.create_connection((domain, 443), timeout=self.timeout) as sock:
+                with ctx.wrap_socket(sock, server_hostname=domain) as ssock:
+                    ssock.getpeercert()
+        except Exception:
+            # Self-signed, expired, weak cipher, or HTTP-only site
+            weak_ssl = 1
 
-            # 2. Check Security Headers (1 = Missing/Vulnerable, 0 = Present/Secure)
-            if 'strict-transport-security' not in resp_headers:
-                vulnerabilities['missing_strict_transport_security'] = 1
-                
-            if 'x-frame-options' not in resp_headers:
-                vulnerabilities['missing_x_frame_options'] = 1
-                
-            if 'x-content-type-options' not in resp_headers:
-                vulnerabilities['missing_x_content_type_options'] = 1
-                
-            if 'content-security-policy' not in resp_headers:
-                vulnerabilities['missing_content_security_policy'] = 1
+        # -------------------------------------------------------------
+        # 2. Web Response & Header Analysis
+        # -------------------------------------------------------------
+        try:
+            response = requests.get(
+                target_url,
+                headers=self.headers,
+                timeout=self.timeout,
+                verify=False,  # Proceed with HTTP inspection even if SSL is invalid
+                allow_redirects=True
+            )
 
-            # 3. Check Information Exposure (1 = Exposed/Vulnerable, 0 = Hidden/Secure)
-            if 'server' in resp_headers:
-                vulnerabilities['server_header_exposed'] = 1
-                
-            if 'x-powered-by' in resp_headers:
-                vulnerabilities['x_powered_by_exposed'] = 1
+            # Normalize headers to lowercase for easy lookup
+            headers = {k.lower(): v for k, v in response.headers.items()}
+            body_text = response.text.lower()
 
-            # 4. Content Inspection (Directory Listing)
-            vulnerabilities['directory_listing_exposed'] = self._check_directory_listing(response.text)
+            # Feature 1: Missing HSTS
+            if 'strict-transport-security' not in headers:
+                missing_hsts = 1
 
-        except requests.exceptions.RequestException as e:
-            # If the request fails entirely, we flag headers as missing/vulnerable
-            # to be safe, but log that it was unreachable.
-            print(f"[VULNEX EXTRACTOR] Connection failed for {target_url}: {e}")
-            for key in vulnerabilities:
-                vulnerabilities[key] = 1 
+            # Feature 2: Missing X-Frame-Options (Clickjacking)
+            if 'x-frame-options' not in headers:
+                missing_x_frame = 1
 
-        # 5. Check SSL independently of the HTTP request
-        if hostname:
-            vulnerabilities['weak_ssl_certificate'] = self._check_ssl(hostname)
+            # Feature 3: Missing X-Content-Type-Options (MIME Sniffing)
+            if 'x-content-type-options' not in headers:
+                missing_x_content_type = 1
 
-        # 6. Generate the binary vector in the exact order of self.feature_names
-        binary_vector = [vulnerabilities[feature] for feature in self.feature_names]
+            # Feature 4: Missing Content-Security-Policy (CSP)
+            if 'content-security-policy' not in headers:
+                missing_csp = 1
+
+            # Feature 5: Exposed Server Banner
+            if 'server' in headers and headers['server'].strip():
+                exposed_server = 1
+
+            # Feature 6: Exposed X-Powered-By Header
+            if 'x-powered-by' in headers:
+                exposed_x_powered_by = 1
+
+            # Feature 7: Exposed Directory Listing
+            dir_indicators = ['index of /', 'directory listing for', 'parent directory']
+            if any(indicator in body_text for indicator in dir_indicators):
+                exposed_dir_listing = 1
+
+            # Features 8 & 9: Cookie Flag Inspections
+            set_cookie_header = headers.get('set-cookie', '')
+            if response.cookies or set_cookie_header:
+                if 'httponly' not in set_cookie_header.lower():
+                    missing_httponly = 1
+                if 'secure' not in set_cookie_header.lower():
+                    missing_secure = 1
+
+            # Feature 10: CORS Wildcard Configuration
+            cors_header = headers.get('access-control-allow-origin', '')
+            if cors_header == '*':
+                cors_wildcard = 1
+
+            # Feature 11: Outdated CMS / Technology Signatures
+            cms_headers = ['x-generator', 'x-drupal-cache', 'x-redirect-by']
+            has_cms_header = any(h in headers for h in cms_headers)
+            cms_keywords = ['wp-content', 'wordpress', 'drupal', 'joomla', 'generator="wordpress']
+            has_cms_body = any(k in body_text for k in cms_keywords)
+
+            if has_cms_header or has_cms_body:
+                outdated_cms = 1
+
+        except Exception:
+            # Fallback if connection times out or fails completely
+            missing_hsts = 1
+            missing_csp = 1
+
+        # -------------------------------------------------------------
+        # 3. Assemble 12-Bit Feature Vector
+        # -------------------------------------------------------------
+        feature_vector = [
+            int(missing_hsts),
+            int(missing_x_frame),
+            int(missing_x_content_type),
+            int(missing_csp),
+            int(exposed_server),
+            int(exposed_x_powered_by),
+            int(weak_ssl),
+            int(exposed_dir_listing),
+            int(missing_httponly),
+            int(missing_secure),
+            int(cors_wildcard),
+            int(outdated_cms)
+        ]
 
         return {
-            "target": target_url,
-            "vulnerability_dict": vulnerabilities,
-            "feature_vector": binary_vector
+            'url': target_url,
+            'feature_vector': feature_vector,
+            'details': {
+                'missing_hsts': bool(missing_hsts),
+                'missing_x_frame_options': bool(missing_x_frame),
+                'missing_x_content_type_options': bool(missing_x_content_type),
+                'missing_csp': bool(missing_csp),
+                'exposed_server_header': bool(exposed_server),
+                'exposed_x_powered_by': bool(exposed_x_powered_by),
+                'weak_ssl_certificate': bool(weak_ssl),
+                'exposed_dir_listing': bool(exposed_dir_listing),
+                'missing_httponly_cookie': bool(missing_httponly),
+                'missing_secure_cookie': bool(missing_secure),
+                'cors_wildcard': bool(cors_wildcard),
+                'outdated_cms_header': bool(outdated_cms)
+            }
         }
-
-# ==========================================
-# TEST BLOCK - Run this file directly to test
-# ==========================================
-if __name__ == "__main__":
-    import urllib3
-    # Suppress InsecureRequestWarning for testing
-    urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-    
-    extractor = VulnexFeatureExtractor()
-    
-    # Test on a known site (you can change this to a vulnerable test site)
-    test_url = "http://neverssl.com" 
-    
-    print(f"Starting extraction on: {test_url}")
-    results = extractor.extract_features(test_url)
-    
-    print("\n--- EXTRACTION COMPLETE ---")
-    print("\nHuman Readable Dictionary:")
-    for key, value in results['vulnerability_dict'].items():
-        print(f"  {key}: {value}")
-        
-    print(f"\nMachine Learning Vector:")
-    print(f"  {results['feature_vector']}")
-
-
-    
