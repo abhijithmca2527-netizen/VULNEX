@@ -25,7 +25,6 @@ class VulnexFeatureExtractor:
         Scans a target URL and returns a 12-bit binary feature vector 
         matching the exact structure of vulnex_dataset.csv.
         """
-        # Ensure scheme is prepended
         if not target_url.startswith(('http://', 'https://')):
             target_url = 'https://' + target_url
 
@@ -55,7 +54,6 @@ class VulnexFeatureExtractor:
                 with ctx.wrap_socket(sock, server_hostname=domain) as ssock:
                     ssock.getpeercert()
         except Exception:
-            # Self-signed, expired, weak cipher, or HTTP-only site
             weak_ssl = 1
 
         # -------------------------------------------------------------
@@ -66,11 +64,10 @@ class VulnexFeatureExtractor:
                 target_url,
                 headers=self.headers,
                 timeout=self.timeout,
-                verify=False,  # Proceed with HTTP inspection even if SSL is invalid
+                verify=False,  
                 allow_redirects=True
             )
 
-            # Normalize headers to lowercase for easy lookup
             headers = {k.lower(): v for k, v in response.headers.items()}
             body_text = response.text.lower()
 
@@ -79,20 +76,26 @@ class VulnexFeatureExtractor:
                 missing_hsts = 1
 
             # Feature 2: Missing X-Frame-Options (Clickjacking)
-            if 'x-frame-options' not in headers:
+            # FIX: Check for legacy X-Frame OR modern CSP frame-ancestors
+            has_x_frame = 'x-frame-options' in headers
+            has_csp_frame = 'content-security-policy' in headers and 'frame-ancestors' in headers['content-security-policy']
+            if not (has_x_frame or has_csp_frame):
                 missing_x_frame = 1
 
-            # Feature 3: Missing X-Content-Type-Options (MIME Sniffing)
+            # Feature 3: Missing X-Content-Type-Options
             if 'x-content-type-options' not in headers:
                 missing_x_content_type = 1
 
-            # Feature 4: Missing Content-Security-Policy (CSP)
+            # Feature 4: Missing Content-Security-Policy
             if 'content-security-policy' not in headers:
                 missing_csp = 1
 
             # Feature 5: Exposed Server Banner
-            if 'server' in headers and headers['server'].strip():
-                exposed_server = 1
+            # FIX: Only flag if the server exposes a version number (e.g., contains digits and a slash)
+            if 'server' in headers:
+                server_val = headers['server'].strip()
+                if any(char.isdigit() for char in server_val) and '/' in server_val:
+                    exposed_server = 1
 
             # Feature 6: Exposed X-Powered-By Header
             if 'x-powered-by' in headers:
@@ -126,7 +129,6 @@ class VulnexFeatureExtractor:
                 outdated_cms = 1
 
         except Exception:
-            # Fallback if connection times out or fails completely
             missing_hsts = 1
             missing_csp = 1
 
