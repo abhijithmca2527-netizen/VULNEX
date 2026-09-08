@@ -1,31 +1,40 @@
 import csv
-import requests
-# Ensure this points to your actual vector generation function
-# from your_scanner_module import generate_12_bit_vector 
+import sys
+import os
+
+# Ensure the root project path is visible
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+
+from websites.feature_extractor import VulnexFeatureExtractor
 
 def update_dataset():
+    extractor = VulnexFeatureExtractor(timeout=5)
+
     with open('trusted_domains.txt', 'r') as file:
-        # NEW CODE
-# This splits the text by spaces and grabs ONLY the very last item (the domain)
+        # Strip ranking numbers and clean whitespace
         domains = [line.split()[-1].strip() for line in file if line.strip()]
+
+    # Limit to the first 150-200 domains so it finishes in 2-3 minutes
+    target_domains = domains[:150]
 
     with open('training_data.csv', 'a', newline='') as csvfile:
         writer = csv.writer(csvfile)
         
-        for domain in domains:
+        for domain in target_domains:
             url = f"https://{domain}"
+            print(f"Scanning {url}...")
+            
             try:
-                print(f"Scanning {url}...")
-                headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'}
-                response = requests.get(url, headers=headers, timeout=5)
+                # 1. Run actual feature extraction
+                scan_result = extractor.extract_features(url)
+                real_vector = scan_result['feature_vector']
                 
-                # REPLACE THIS with your actual vector function
-                # vector = generate_12_bit_vector(response.headers)
-                vector = [1, 1, 0, 1, 0, 0, 1, 1, 1, 0, 1, 1] # Mock vector
+                # 2. Append genuine feature vector labeled as 'Low'
+                writer.writerow(real_vector + ['Low'])
+                print(f"✅ Added: {real_vector} -> Low")
                 
-                writer.writerow(vector + ['Low'])
-            except requests.RequestException:
-                print(f"Skipping {domain} - Connection failed.")
+            except Exception as e:
+                print(f"❌ Skipping {domain} - Error: {e}")
 
 if __name__ == "__main__":
     update_dataset()
