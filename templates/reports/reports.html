@@ -1,0 +1,630 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Reports — VulnEx</title>
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        void: '#030712',
+                        panel: '#0F172A',
+                        panelsoft: '#131C31',
+                        line: '#1E293B',
+                        cyan: '#22D3EE',
+                        low: '#34D399',
+                        med: '#FACC15',
+                        high: '#FB923C',
+                        crit: '#F43F5E'
+                    }
+                }
+            }
+        }
+    </script>
+
+</head>
+
+
+<body class="bg-void text-slate-200 min-h-screen">
+
+
+<!-- ===================================================== -->
+<!-- TOP NAVIGATION -->
+<!-- ===================================================== -->
+
+<nav class="border-b border-line bg-void/90">
+
+    <div
+        class="
+            max-w-6xl
+            mx-auto
+            px-6
+            h-16
+            flex
+            items-center
+            justify-between
+        "
+    >
+
+        <!-- Logo -->
+
+        <div class="text-xl font-bold text-white">
+            Vuln<span class="text-cyan">Ex</span>
+        </div>
+
+
+        <!-- Navigation -->
+
+        <div class="flex items-center gap-6 text-sm">
+
+            <a
+                href="{% url 'dashboard' %}"
+                class="
+                    text-slate-400
+                    hover:text-white
+                    transition
+                "
+            >
+                Dashboard
+            </a>
+
+
+            <a
+                href="{% url 'profile' %}#history-section"
+                class="
+                    text-slate-400
+                    hover:text-white
+                    transition
+                "
+            >
+                History
+            </a>
+
+
+            <span
+                class="
+                    text-cyan
+                    font-semibold
+                "
+            >
+                Reports
+            </span>
+
+        </div>
+
+    </div>
+
+</nav>
+
+
+<!-- ===================================================== -->
+<!-- PAGE CONTENT -->
+<!-- ===================================================== -->
+
+<div class="max-w-6xl mx-auto px-6 py-8">
+
+
+    <!-- ================================================= -->
+    <!-- PAGE HEADER -->
+    <!-- ================================================= -->
+
+    <div
+        class="
+            flex
+            flex-wrap
+            items-center
+            justify-between
+            gap-4
+            mb-8
+        "
+    >
+
+        <div>
+
+            <h1 class="text-2xl font-semibold text-white">
+                Scan Reports
+            </h1>
+
+            <p class="text-sm text-slate-400 mt-1">
+                Your stored VulnEx vulnerability scan reports.
+            </p>
+
+        </div>
+
+
+        <!-- NEW SCAN -->
+
+        <a
+            href="{% url 'dashboard' %}"
+            class="
+                px-4
+                py-2
+                rounded-lg
+                bg-cyan
+                text-black
+                font-semibold
+                text-sm
+                hover:opacity-90
+                transition
+            "
+        >
+            + New Scan
+        </a>
+
+    </div>
+
+
+    <!-- ================================================= -->
+    <!-- REPORT TABLE -->
+    <!-- ================================================= -->
+
+    <div
+        class="
+            bg-panel
+            border
+            border-line
+            rounded-2xl
+            overflow-hidden
+        "
+    >
+
+
+        <!-- TABLE HEADER -->
+
+        <div
+            class="
+                px-5
+                py-4
+                border-b
+                border-line
+                flex
+                items-center
+                justify-between
+            "
+        >
+
+            <div>
+
+                <h2 class="font-semibold text-white">
+                    Scan History
+                </h2>
+
+                <p class="text-xs text-slate-500 mt-1">
+                    Previous vulnerability scans stored in VulnEx.
+                </p>
+
+            </div>
+
+
+            <div
+                class="
+                    text-xs
+                    text-slate-400
+                    bg-panelsoft
+                    border
+                    border-line
+                    px-3
+                    py-1
+                    rounded-full
+                "
+            >
+                {{ scans|length }} Reports
+            </div>
+
+        </div>
+
+
+        <!-- TABLE -->
+
+        <div class="overflow-x-auto">
+
+            <table class="w-full text-sm min-w-[760px]">
+
+
+                <!-- ============================= -->
+                <!-- COLUMN HEADINGS -->
+                <!-- ============================= -->
+
+                <thead>
+
+                    <tr
+                        class="
+                            border-b
+                            border-line
+                            text-left
+                            text-xs
+                            uppercase
+                            text-slate-500
+                        "
+                    >
+
+                        <th class="px-5 py-4">
+                            Date
+                        </th>
+
+                        <th class="px-5 py-4">
+                            Target
+                        </th>
+
+                        <th class="px-5 py-4">
+                            Risk
+                        </th>
+
+                        <th class="px-5 py-4">
+                            Confidence
+                        </th>
+
+                        <th class="px-5 py-4">
+                            Action
+                        </th>
+
+                    </tr>
+
+                </thead>
+
+
+                <!-- ============================= -->
+                <!-- REPORT ROWS -->
+                <!-- ============================= -->
+
+                <tbody class="divide-y divide-line">
+
+
+                    {% for scan in scans %}
+
+
+                    <tr
+                        class="
+                            hover:bg-panelsoft
+                            transition
+                        "
+                    >
+
+
+                        <!-- DATE -->
+
+                        <td class="px-5 py-4 text-slate-400 whitespace-nowrap">
+
+                            {{ scan.created_at|date:"d M Y, H:i" }}
+
+                        </td>
+
+
+                        <!-- TARGET URL -->
+
+                        <td
+                            class="
+                                px-5
+                                py-4
+                                font-mono
+                                text-slate-200
+                                max-w-xs
+                            "
+                        >
+
+                            <div
+                                class="
+                                    truncate
+                                    max-w-[320px]
+                                "
+                                title="{{ scan.target_url }}"
+                            >
+
+                                {{ scan.target_url }}
+
+                            </div>
+
+                        </td>
+
+
+                        <!-- ============================= -->
+                        <!-- RISK LEVEL -->
+                        <!-- ============================= -->
+
+                        <td class="px-5 py-4">
+
+
+                            {% with risk=scan.risk_level|lower %}
+
+
+                                {% if risk == "critical" %}
+
+                                    <span
+                                        class="
+                                            inline-flex
+                                            items-center
+                                            px-3
+                                            py-1
+                                            rounded-full
+                                            bg-crit/10
+                                            text-crit
+                                            border
+                                            border-crit/20
+                                            font-medium
+                                        "
+                                    >
+                                        Critical
+                                    </span>
+
+
+                                {% elif risk == "high" %}
+
+                                    <span
+                                        class="
+                                            inline-flex
+                                            items-center
+                                            px-3
+                                            py-1
+                                            rounded-full
+                                            bg-high/10
+                                            text-high
+                                            border
+                                            border-high/20
+                                            font-medium
+                                        "
+                                    >
+                                        High
+                                    </span>
+
+
+                                {% elif risk == "medium" %}
+
+                                    <span
+                                        class="
+                                            inline-flex
+                                            items-center
+                                            px-3
+                                            py-1
+                                            rounded-full
+                                            bg-med/10
+                                            text-med
+                                            border
+                                            border-med/20
+                                            font-medium
+                                        "
+                                    >
+                                        Medium
+                                    </span>
+
+
+                                {% elif risk == "low" %}
+
+                                    <span
+                                        class="
+                                            inline-flex
+                                            items-center
+                                            px-3
+                                            py-1
+                                            rounded-full
+                                            bg-low/10
+                                            text-low
+                                            border
+                                            border-low/20
+                                            font-medium
+                                        "
+                                    >
+                                        Low
+                                    </span>
+
+
+                                {% else %}
+
+                                    <span
+                                        class="
+                                            inline-flex
+                                            items-center
+                                            px-3
+                                            py-1
+                                            rounded-full
+                                            bg-slate-700/20
+                                            text-slate-500
+                                            border
+                                            border-slate-700
+                                        "
+                                    >
+                                        Unknown
+                                    </span>
+
+
+                                {% endif %}
+
+
+                            {% endwith %}
+
+
+                        </td>
+
+
+                        <!-- ============================= -->
+                        <!-- AI CONFIDENCE -->
+                        <!-- ============================= -->
+
+                        <td class="px-5 py-4">
+
+                            {% if scan.confidence != None %}
+
+                                <span class="text-cyan font-medium">
+
+                                    {{ scan.confidence|floatformat:2 }}%
+
+                                </span>
+
+                            {% else %}
+
+                                <span class="text-slate-500">
+                                    0%
+                                </span>
+
+                            {% endif %}
+
+                        </td>
+
+
+                        <!-- ============================= -->
+                        <!-- VIEW REPORT -->
+                        <!-- ============================= -->
+
+                        <td class="px-5 py-4">
+
+
+                            {% if scan.task_id %}
+
+                                <a
+                                    href="{% url 'scan_report' scan.task_id %}"
+                                    class="
+                                        inline-flex
+                                        items-center
+                                        gap-2
+                                        px-3
+                                        py-2
+                                        rounded-lg
+                                        bg-cyan/10
+                                        text-cyan
+                                        border
+                                        border-cyan/20
+                                        hover:bg-cyan/20
+                                        transition
+                                        font-medium
+                                    "
+                                >
+
+                                    View Report
+
+                                    <span>
+                                        →
+                                    </span>
+
+                                </a>
+
+
+                            {% else %}
+
+                                <span
+                                    class="
+                                        text-slate-600
+                                        text-xs
+                                    "
+                                >
+                                    Report unavailable
+                                </span>
+
+
+                            {% endif %}
+
+
+                        </td>
+
+
+                    </tr>
+
+
+                    <!-- ============================= -->
+                    <!-- NO REPORTS -->
+                    <!-- ============================= -->
+
+
+                    {% empty %}
+
+
+                    <tr>
+
+                        <td
+                            colspan="5"
+                            class="
+                                px-5
+                                py-16
+                                text-center
+                            "
+                        >
+
+                            <div class="text-4xl mb-4">
+                                🔍
+                            </div>
+
+                            <h3
+                                class="
+                                    text-white
+                                    font-semibold
+                                    mb-2
+                                "
+                            >
+                                No Scan Reports Yet
+                            </h3>
+
+                            <p
+                                class="
+                                    text-slate-500
+                                    text-sm
+                                    mb-5
+                                "
+                            >
+                                Run your first vulnerability scan
+                                to generate a security report.
+                            </p>
+
+
+                            <a
+                                href="{% url 'dashboard' %}"
+                                class="
+                                    inline-block
+                                    px-4
+                                    py-2
+                                    rounded-lg
+                                    bg-cyan
+                                    text-black
+                                    font-semibold
+                                    text-sm
+                                "
+                            >
+                                Start New Scan
+                            </a>
+
+                        </td>
+
+                    </tr>
+
+
+                    {% endfor %}
+
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+    </div>
+
+
+    <!-- ================================================= -->
+    <!-- INFO -->
+    <!-- ================================================= -->
+
+    <div
+        class="
+            mt-5
+            text-xs
+            text-slate-500
+        "
+    >
+
+        Reports are stored in the VulnEx database and are
+        associated with your account.
+
+    </div>
+
+
+</div>
+
+
+</body>
+
+</html>

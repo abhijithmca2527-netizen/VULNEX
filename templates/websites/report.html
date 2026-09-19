@@ -1,169 +1,694 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>VulNex - Scan Report</title>
-<script src="https://cdn.tailwindcss.com"></script>
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
-<style>
-body{font-family:Inter,sans-serif;background:#050816;color:#fff}
-h1,h2,h3{font-family:"Space Grotesk",sans-serif}
-.card{background:#0F172A;border:1px solid #1E293B}
-.gridbg{background-image:linear-gradient(rgba(34,211,238,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(34,211,238,.05) 1px,transparent 1px);background-size:42px 42px}
-/* Dynamic circle fill using Django variable */
-.score{background:conic-gradient({{ score_hex }} 0 {{ risk_score }}%,#1E293B {{ risk_score }}%);}
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>VulNex - Scan Report</title>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <link
+        href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600&display=swap"
+        rel="stylesheet"
+    >
+
+    <style>
+        body {
+            font-family: Inter, sans-serif;
+            background: #050816;
+            color: #fff;
+        }
+
+        h1,
+        h2,
+        h3 {
+            font-family: "Space Grotesk", sans-serif;
+        }
+
+        .card {
+            background: #0F172A;
+            border: 1px solid #1E293B;
+        }
+
+        .gridbg {
+            background-image:
+                linear-gradient(
+                    rgba(34, 211, 238, 0.05) 1px,
+                    transparent 1px
+                ),
+                linear-gradient(
+                    90deg,
+                    rgba(34, 211, 238, 0.05) 1px,
+                    transparent 1px
+                );
+
+            background-size: 42px 42px;
+        }
+    </style>
 </head>
+
+
 <body class="gridbg">
 
-<nav class="sticky top-0 bg-[#050816]/80 backdrop-blur border-b border-slate-800 z-50">
-<div class="max-w-7xl mx-auto px-8 h-16 flex items-center justify-between">
-<div class="text-2xl font-bold">Vuln<span class="text-cyan-400">Ex</span></div>
-<div class="space-x-6 text-slate-300">
-<a href="{% url 'dashboard' %}" class="hover:text-white transition">Dashboard</a>
-<a href="/history/" class="hover:text-white transition">History</a>
-<a href="/reports/" class="text-white font-medium">Reports</a>
-</div>
-</div>
+
+<!-- =====================================================
+     NAVBAR
+===================================================== -->
+
+<nav
+    class="sticky top-0 bg-[#050816]/80 backdrop-blur border-b border-slate-800 z-50"
+>
+    <div
+        class="max-w-7xl mx-auto px-8 h-16 flex items-center justify-between"
+    >
+
+        <div class="text-2xl font-bold">
+            Vuln<span class="text-cyan-400">Ex</span>
+        </div>
+
+        <div class="space-x-6 text-slate-300">
+
+            <a
+                href="{% url 'dashboard' %}"
+                class="hover:text-white transition"
+            >
+                Dashboard
+            </a>
+
+            <a
+                href="/history/"
+                class="hover:text-white transition"
+            >
+                History
+            </a>
+
+            <a
+                href="/reports/"
+                class="text-white font-medium"
+            >
+                Reports
+            </a>
+
+        </div>
+
+    </div>
 </nav>
+
+
 
 <div class="max-w-7xl mx-auto px-8 py-10">
 
-<div class="flex flex-wrap items-center justify-between gap-6 mb-8">
-<div>
-<h1 class="text-4xl font-bold">Security Scan Report</h1>
-<p class="text-slate-400 mt-2">Target: <span class="text-cyan-400 font-mono">{{ url }}</span></p>
-<p class="text-slate-500 text-sm">Completed • {% now "F j, Y" %} • Powered by VulNex AI</p>
+
+<!-- =====================================================
+     REPORT HEADER
+===================================================== -->
+
+<div
+    class="flex flex-wrap items-center justify-between gap-6 mb-8"
+>
+
+    <div>
+
+        <h1 class="text-4xl font-bold">
+            Security Scan Report
+        </h1>
+
+        <p class="text-slate-400 mt-2">
+            Target:
+            <span class="text-cyan-400 font-mono">
+                {{ url }}
+            </span>
+        </p>
+
+        <p class="text-slate-500 text-sm">
+            Completed • {% now "F j, Y" %} • Powered by VulNex AI
+        </p>
+
+    </div>
+
+
+    <div class="flex gap-3">
+
+        <button
+            onclick="window.print()"
+            class="bg-cyan-400 text-black px-5 py-3 rounded-xl font-semibold hover:bg-cyan-300 transition"
+        >
+            Download PDF
+        </button>
+
+    </div>
+
 </div>
 
-<div class="flex gap-3">
-<button onclick="window.print()" class="bg-cyan-400 text-black px-5 py-3 rounded-xl font-semibold hover:bg-cyan-300 transition">Download PDF</button>
-</div>
-</div>
+
+
+<!-- =====================================================
+     SUMMARY CARDS
+===================================================== -->
 
 <div class="grid lg:grid-cols-4 gap-6 mb-8">
 
-<!-- AI Risk Score Circle -->
+
+<!-- =====================================================
+     HEALTH SCORE
+===================================================== -->
+
 <div class="card rounded-2xl p-6 text-center">
-<div class="score mx-auto w-36 h-36 rounded-full flex items-center justify-center">
-<div class="w-28 h-28 rounded-full bg-[#050816] flex flex-col justify-center items-center">
-<div class="text-4xl font-bold {{ risk_text_color }}">{{ risk_score }}</div>
-<div class="text-xs text-slate-400 mt-1">Health Score</div>
-</div>
-</div>
-<p class="mt-4 font-bold {{ risk_text_color }}">{{ risk_label }}</p>
+
+    <div class="relative mx-auto w-36 h-36">
+
+        <svg
+            class="w-36 h-36 -rotate-90"
+            viewBox="0 0 120 120"
+        >
+
+            <!-- Background circle -->
+            <circle
+                cx="60"
+                cy="60"
+                r="50"
+                fill="none"
+                stroke="#1E293B"
+                stroke-width="12"
+            />
+
+            <!-- Dynamic score circle -->
+            <circle
+                cx="60"
+                cy="60"
+                r="50"
+                fill="none"
+                stroke="{{ score_hex }}"
+                stroke-width="12"
+                stroke-linecap="butt"
+                pathLength="100"
+                stroke-dasharray="{{ risk_score }} 100"
+            />
+
+        </svg>
+
+
+        <div
+            class="absolute inset-0 flex flex-col items-center justify-center"
+        >
+
+            <div
+                class="text-4xl font-bold {{ risk_text_color }}"
+            >
+                {{ risk_score }}
+            </div>
+
+            <div class="text-xs text-slate-400 mt-1">
+                Health Score
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <p class="mt-4 font-bold {{ risk_text_color }}">
+        {{ risk_label }}
+    </p>
+
 </div>
 
-<!-- AI Summary -->
+
+
+<!-- =====================================================
+     AI SUMMARY
+===================================================== -->
+
 <div class="card rounded-2xl p-6">
-<h3 class="text-slate-400 mb-3">AI Prediction Summary</h3>
-<div class="space-y-2">
-<p>Model Confidence <span class="float-right font-bold text-cyan-400">86.0%</span></p>
-<p>Total Issues Found <span class="float-right font-bold text-slate-200">{{ total_issues }}</span></p>
-<p>Passive Checks <span class="float-right font-bold text-slate-200">12 / 12</span></p>
-</div>
+
+    <h3 class="text-slate-400 mb-3">
+        AI Prediction Summary
+    </h3>
+
+    <div class="space-y-2">
+
+        <p>
+            Model Confidence
+
+            <span class="float-right font-bold text-cyan-400">
+                {{ confidence }}%
+            </span>
+        </p>
+
+        <p>
+            Total Issues Found
+
+            <span class="float-right font-bold text-slate-200">
+                {{ total_issues }}
+            </span>
+        </p>
+
+        <p>
+            Passive Checks
+
+            <span class="float-right font-bold text-slate-200">
+                12 / 12
+            </span>
+        </p>
+
+    </div>
+
 </div>
 
-<!-- Technology Overview -->
+
+
+<!-- =====================================================
+     DETECTED VECTORS
+===================================================== -->
+
 <div class="card rounded-2xl p-6">
-<h3 class="text-slate-400 mb-3">Detected Vectors</h3>
-<div class="flex flex-wrap gap-2">
-{% if "exposed_server_header" in raw_flags and raw_flags.exposed_server_header %}
-<span class="px-3 py-1 bg-slate-800 border border-slate-700 rounded-full text-sm">Server Headers</span>
-{% endif %}
-{% if "weak_ssl_certificate" in raw_flags and raw_flags.weak_ssl_certificate %}
-<span class="px-3 py-1 bg-slate-800 border border-slate-700 rounded-full text-sm">TLS/SSL</span>
-{% endif %}
-{% if "missing_csp" in raw_flags and raw_flags.missing_csp %}
-<span class="px-3 py-1 bg-slate-800 border border-slate-700 rounded-full text-sm">Content Policy</span>
-{% endif %}
-<span class="px-3 py-1 bg-slate-800 border border-slate-700 rounded-full text-sm">HTTP Security</span>
+
+    <h3 class="text-slate-400 mb-3">
+        Detected Vectors
+    </h3>
+
+    <div class="flex flex-wrap gap-2">
+
+
+        {% if raw_flags.exposed_server_header %}
+
+        <span
+            class="px-3 py-1 bg-slate-800 border border-slate-700 rounded-full text-sm"
+        >
+            Server Headers
+        </span>
+
+        {% endif %}
+
+
+        {% if raw_flags.weak_ssl_certificate %}
+
+        <span
+            class="px-3 py-1 bg-slate-800 border border-slate-700 rounded-full text-sm"
+        >
+            TLS/SSL
+        </span>
+
+        {% endif %}
+
+
+        {% if raw_flags.missing_csp %}
+
+        <span
+            class="px-3 py-1 bg-slate-800 border border-slate-700 rounded-full text-sm"
+        >
+            Content Policy
+        </span>
+
+        {% endif %}
+
+
+        <span
+            class="px-3 py-1 bg-slate-800 border border-slate-700 rounded-full text-sm"
+        >
+            HTTP Security
+        </span>
+
+    </div>
+
 </div>
-</div>
+
+
+
+<!-- =====================================================
+     SCAN STATUS
+===================================================== -->
 
 <div class="card rounded-2xl p-6">
-<h3 class="text-slate-400 mb-3">Scan Status</h3>
-<p class="text-green-400 font-semibold flex items-center gap-2">
-    <span class="w-2 h-2 rounded-full bg-green-400 inline-block animate-pulse"></span> Scan Completed
-</p>
-<p class="text-slate-400 mt-2 text-sm">Vector Size: 12-Bit</p>
-<p class="text-slate-400 text-sm">Engine: Random Forest Classifier</p>
-</div>
+
+    <h3 class="text-slate-400 mb-3">
+        Scan Status
+    </h3>
+
+    <p
+        class="text-green-400 font-semibold flex items-center gap-2"
+    >
+
+        <span
+            class="w-2 h-2 rounded-full bg-green-400 inline-block animate-pulse"
+        ></span>
+
+        Scan Completed
+
+    </p>
+
+    <p class="text-slate-400 mt-2 text-sm">
+        Vector Size: 12-Bit
+    </p>
+
+    <p class="text-slate-400 text-sm">
+        Engine: Random Forest Classifier
+    </p>
 
 </div>
 
-<!-- Vulnerability Table -->
+
+</div>
+
+
+<!-- =====================================================
+     DETECTED VULNERABILITIES
+===================================================== -->
+
 <div class="card rounded-2xl overflow-hidden mb-8">
-<div class="px-6 py-4 border-b border-slate-800 flex justify-between items-center">
-<h2 class="text-2xl font-bold">Detected Vulnerabilities</h2>
-<span class="bg-slate-800 text-sm px-3 py-1 rounded-full border border-slate-700">{{ total_issues }} Findings</span>
+
+    <div
+        class="px-6 py-4 border-b border-slate-800 flex justify-between items-center"
+    >
+
+        <h2 class="text-2xl font-bold">
+            Detected Vulnerabilities
+        </h2>
+
+        <span
+            class="bg-slate-800 text-sm px-3 py-1 rounded-full border border-slate-700"
+        >
+            {{ total_issues }} Findings
+        </span>
+
+    </div>
+
+
+    <div class="overflow-x-auto">
+
+        <table class="w-full table-fixed">
+
+            <!-- COLUMN WIDTHS -->
+            <colgroup>
+                <col style="width: 13%;">
+                <col style="width: 17%;">
+                <col style="width: 37%;">
+                <col style="width: 28%;">
+                <col style="width: 5%;">
+            </colgroup>
+
+
+            <thead class="bg-slate-900/50">
+
+                <tr>
+
+                    <th class="text-left p-4 text-slate-400 font-medium">
+                        Type
+                    </th>
+
+                    <th class="text-left p-4 text-slate-400 font-medium">
+                        Finding
+                    </th>
+
+                    <th class="text-left p-4 text-slate-400 font-medium">
+                        Issue
+                    </th>
+
+                    <th class="text-left p-4 text-slate-400 font-medium">
+                        Description
+                    </th>
+
+                    <th class="text-left p-4 text-slate-400 font-medium">
+                        Status
+                    </th>
+
+                </tr>
+
+            </thead>
+
+
+            <tbody>
+
+                {% for vuln in found_vulns %}
+
+                <tr
+                    class="border-t border-slate-800/50 hover:bg-slate-800/20 transition"
+                >
+
+
+                    <!-- TYPE -->
+
+                    <td
+                        class="p-4 text-cyan-400 font-bold align-top break-words"
+                    >
+                        Config / Header
+                    </td>
+
+
+                    <!-- FINDING -->
+
+                    <td
+                        class="p-4 font-medium align-top break-words"
+                    >
+                        {{ vuln.name }}
+                    </td>
+
+
+                    <!-- ISSUE -->
+
+                    <td
+                        class="p-4 text-yellow-300 text-sm align-top"
+                        style="
+                            overflow-wrap: anywhere;
+                            word-break: break-word;
+                            white-space: normal;
+                        "
+                    >
+
+                        {% if vuln.issue %}
+
+                            {{ vuln.issue }}
+
+                        {% else %}
+
+                            <span class="text-slate-500">
+                                No site-specific evidence returned.
+                            </span>
+
+                        {% endif %}
+
+                    </td>
+
+
+                    <!-- DESCRIPTION -->
+
+                    <td
+                        class="p-4 text-slate-400 text-sm align-top"
+                        style="
+                            overflow-wrap: anywhere;
+                            word-break: break-word;
+                            white-space: normal;
+                        "
+                    >
+                        {{ vuln.description }}
+                    </td>
+
+
+                    <!-- STATUS -->
+
+                    <td class="p-4 align-top">
+
+                        <span
+                            class="bg-red-400/10 text-red-400 px-2 py-1 rounded text-xs border border-red-400/20"
+                        >
+                            Open
+                        </span>
+
+                    </td>
+
+                </tr>
+
+
+                {% empty %}
+
+
+                <tr>
+
+                    <td
+                        colspan="5"
+                        class="p-8 text-center text-green-400 bg-green-400/5"
+                    >
+
+                        <div class="text-4xl mb-2">
+                            🎉
+                        </div>
+
+                        <div class="font-bold">
+                            Perfect Architecture!
+                        </div>
+
+                        <div class="text-sm text-green-400/70">
+                            No passive vulnerabilities were detected
+                            by the 12-bit scanner.
+                        </div>
+
+                    </td>
+
+                </tr>
+
+
+                {% endfor %}
+
+            </tbody>
+
+        </table>
+
+    </div>
+
 </div>
 
-<div class="overflow-x-auto">
-<table class="w-full">
-<thead class="bg-slate-900/50">
-<tr>
-<th class="text-left p-4 text-slate-400 font-medium">Type</th>
-<th class="text-left p-4 text-slate-400 font-medium">Finding</th>
-<th class="text-left p-4 text-slate-400 font-medium">Description</th>
-<th class="text-left p-4 text-slate-400 font-medium">Status</th>
-</tr>
-</thead>
-<tbody>
-{% for vuln in found_vulns %}
-<tr class="border-t border-slate-800/50 hover:bg-slate-800/20 transition">
-<td class="p-4 text-cyan-400 font-bold whitespace-nowrap">Config / Header</td>
-<td class="p-4 font-medium">{{ vuln.name }}</td>
-<td class="p-4 text-slate-400 text-sm max-w-md">{{ vuln.description }}</td>
-<td class="p-4"><span class="bg-red-400/10 text-red-400 px-2 py-1 rounded text-xs border border-red-400/20">Open</span></td>
-</tr>
-{% empty %}
-<tr>
-<td colspan="4" class="p-8 text-center text-green-400 bg-green-400/5">
-    <div class="text-4xl mb-2">🎉</div>
-    <div class="font-bold">Perfect Architecture!</div>
-    <div class="text-sm text-green-400/70">No passive vulnerabilities were detected by the 12-bit scanner.</div>
-</td>
-</tr>
-{% endfor %}
-</tbody>
-</table>
-</div>
-</div>
 
-<!-- Recommendations and Details -->
+<!-- =====================================================
+     REMEDIATION + PIPELINE
+===================================================== -->
+
 <div class="grid lg:grid-cols-2 gap-6">
 
-<div class="card rounded-2xl p-6">
-<h2 class="text-2xl mb-4">AI Remediation Fixes</h2>
-<ul class="space-y-3 text-slate-300">
-{% for vuln in found_vulns %}
-    <li class="flex items-start gap-3">
-        <span class="text-cyan-400 mt-1">↳</span>
-        <span>{{ vuln.fix }}</span>
-    </li>
-{% empty %}
-    <li class="text-slate-500">No remediation required. The target environment is secure.</li>
-{% endfor %}
-</ul>
-</div>
+
+<!-- =====================================================
+     AI REMEDIATION
+===================================================== -->
 
 <div class="card rounded-2xl p-6">
-<h2 class="text-2xl mb-4">Pipeline Details</h2>
-<div class="space-y-3 text-slate-300 font-mono text-sm">
-<p class="flex justify-between border-b border-slate-800 pb-2"><span>[01] Target Parsing</span> <span class="text-green-400">OK</span></p>
-<p class="flex justify-between border-b border-slate-800 pb-2"><span>[02] SSL/TLS Inspection</span> <span class="text-green-400">OK</span></p>
-<p class="flex justify-between border-b border-slate-800 pb-2"><span>[03] HTTP Header Extraction</span> <span class="text-green-400">OK</span></p>
-<p class="flex justify-between border-b border-slate-800 pb-2"><span>[04] Body/Signature Mapping</span> <span class="text-green-400">OK</span></p>
-<p class="flex justify-between border-b border-slate-800 pb-2"><span>[05] 12-Bit Vector Assembly</span> <span class="text-green-400">OK</span></p>
-<p class="flex justify-between"><span>[06] ML Predictive Inference</span> <span class="text-cyan-400">COMPLETE</span></p>
-</div>
-</div>
+
+    <h2 class="text-2xl mb-4">
+        AI Remediation Fixes
+    </h2>
+
+    <ul class="space-y-3 text-slate-300">
+
+        {% for vuln in found_vulns %}
+
+        <li class="flex items-start gap-3">
+
+            <span class="text-cyan-400 mt-1">
+                ↳
+            </span>
+
+            <span>
+                {{ vuln.fix }}
+            </span>
+
+        </li>
+
+        {% empty %}
+
+        <li class="text-slate-500">
+            No remediation required.
+            The target environment is secure.
+        </li>
+
+        {% endfor %}
+
+    </ul>
 
 </div>
 
+
+
+<!-- =====================================================
+     PIPELINE DETAILS
+===================================================== -->
+
+<div class="card rounded-2xl p-6">
+
+    <h2 class="text-2xl mb-4">
+        Pipeline Details
+    </h2>
+
+    <div
+        class="space-y-3 text-slate-300 font-mono text-sm"
+    >
+
+        <p
+            class="flex justify-between border-b border-slate-800 pb-2"
+        >
+            <span>
+                [01] Target Parsing
+            </span>
+
+            <span class="text-green-400">
+                OK
+            </span>
+        </p>
+
+
+        <p
+            class="flex justify-between border-b border-slate-800 pb-2"
+        >
+            <span>
+                [02] SSL/TLS Inspection
+            </span>
+
+            <span class="text-green-400">
+                OK
+            </span>
+        </p>
+
+
+        <p
+            class="flex justify-between border-b border-slate-800 pb-2"
+        >
+            <span>
+                [03] HTTP Header Extraction
+            </span>
+
+            <span class="text-green-400">
+                OK
+            </span>
+        </p>
+
+
+        <p
+            class="flex justify-between border-b border-slate-800 pb-2"
+        >
+            <span>
+                [04] Body/Signature Mapping
+            </span>
+
+            <span class="text-green-400">
+                OK
+            </span>
+        </p>
+
+
+        <p
+            class="flex justify-between border-b border-slate-800 pb-2"
+        >
+            <span>
+                [05] 12-Bit Vector Assembly
+            </span>
+
+            <span class="text-green-400">
+                OK
+            </span>
+        </p>
+
+
+        <p class="flex justify-between">
+
+            <span>
+                [06] ML Predictive Inference
+            </span>
+
+            <span class="text-cyan-400">
+                COMPLETE
+            </span>
+
+        </p>
+
+    </div>
+
 </div>
+
+
+</div>
+
+
+</div>
+
 
 </body>
 </html>
