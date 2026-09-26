@@ -153,6 +153,11 @@ class VulnexFeatureExtractor:
         return {
             'url': target_url,
             'feature_vector': feature_vector,
+            'raw_data': {
+                'status_code': response.status_code if 'response' in locals() else None,
+                'server': response.headers.get("Server", "Unknown") if 'response' in locals() else "Unknown",
+                'headers': dict(response.headers) if 'response' in locals() else {}
+            },
             'details': {
                 'missing_hsts': bool(missing_hsts),
                 'missing_x_frame_options': bool(missing_x_frame),

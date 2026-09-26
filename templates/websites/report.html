@@ -11,7 +11,6 @@ body{font-family:Inter,sans-serif;background:#050816;color:#fff}
 h1,h2,h3{font-family:"Space Grotesk",sans-serif}
 .card{background:#0F172A;border:1px solid #1E293B}
 .gridbg{background-image:linear-gradient(rgba(34,211,238,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(34,211,238,.05) 1px,transparent 1px);background-size:42px 42px}
-/* Dynamic circle fill using Django variable */
 .score{background:conic-gradient({{ score_hex }} 0 {{ risk_score }}%,#1E293B {{ risk_score }}%);}
 </style>
 </head>
@@ -59,9 +58,9 @@ h1,h2,h3{font-family:"Space Grotesk",sans-serif}
 <div class="card rounded-2xl p-6">
 <h3 class="text-slate-400 mb-3">AI Prediction Summary</h3>
 <div class="space-y-2">
-<p>Model Confidence <span class="float-right font-bold text-cyan-400">86.0%</span></p>
+<p>Engine <span class="float-right font-bold text-cyan-400">{% if is_ollama %}LLM Semantic{% else %}Frontline ML{% endif %}</span></p>
 <p>Total Issues Found <span class="float-right font-bold text-slate-200">{{ total_issues }}</span></p>
-<p>Passive Checks <span class="float-right font-bold text-slate-200">12 / 12</span></p>
+<p>Inspection Type <span class="float-right font-bold text-slate-200">{% if is_ollama %}Zero-Day / Deep{% else %}12-Bit Baseline{% endif %}</span></p>
 </div>
 </div>
 
@@ -69,6 +68,10 @@ h1,h2,h3{font-family:"Space Grotesk",sans-serif}
 <div class="card rounded-2xl p-6">
 <h3 class="text-slate-400 mb-3">Detected Vectors</h3>
 <div class="flex flex-wrap gap-2">
+{% if is_ollama %}
+<span class="px-3 py-1 bg-purple-950/50 border border-purple-700/50 text-purple-300 rounded-full text-sm">Deep Semantic Inspection</span>
+<span class="px-3 py-1 bg-slate-800 border border-slate-700 rounded-full text-sm">Header Anomaly Analysis</span>
+{% else %}
 {% if "exposed_server_header" in raw_flags and raw_flags.exposed_server_header %}
 <span class="px-3 py-1 bg-slate-800 border border-slate-700 rounded-full text-sm">Server Headers</span>
 {% endif %}
@@ -79,16 +82,18 @@ h1,h2,h3{font-family:"Space Grotesk",sans-serif}
 <span class="px-3 py-1 bg-slate-800 border border-slate-700 rounded-full text-sm">Content Policy</span>
 {% endif %}
 <span class="px-3 py-1 bg-slate-800 border border-slate-700 rounded-full text-sm">HTTP Security</span>
+{% endif %}
 </div>
 </div>
 
+<!-- Scan Status -->
 <div class="card rounded-2xl p-6">
 <h3 class="text-slate-400 mb-3">Scan Status</h3>
 <p class="text-green-400 font-semibold flex items-center gap-2">
     <span class="w-2 h-2 rounded-full bg-green-400 inline-block animate-pulse"></span> Scan Completed
 </p>
-<p class="text-slate-400 mt-2 text-sm">Vector Size: 12-Bit</p>
-<p class="text-slate-400 text-sm">Engine: Random Forest Classifier</p>
+<p class="text-slate-400 mt-2 text-sm">Pipeline: {% if is_ollama %}Tier 2 LLM{% else %}Tier 1 Classifier{% endif %}</p>
+<p class="text-slate-400 text-sm">Engine: <span class="text-cyan-400 font-semibold">{{ engine }}</span></p>
 </div>
 
 </div>
@@ -111,22 +116,41 @@ h1,h2,h3{font-family:"Space Grotesk",sans-serif}
 </tr>
 </thead>
 <tbody>
-{% for vuln in found_vulns %}
-<tr class="border-t border-slate-800/50 hover:bg-slate-800/20 transition">
-<td class="p-4 text-cyan-400 font-bold whitespace-nowrap">Config / Header</td>
-<td class="p-4 font-medium">{{ vuln.name }}</td>
-<td class="p-4 text-slate-400 text-sm max-w-md">{{ vuln.description }}</td>
-<td class="p-4"><span class="bg-red-400/10 text-red-400 px-2 py-1 rounded text-xs border border-red-400/20">Open</span></td>
-</tr>
-{% empty %}
-<tr>
-<td colspan="4" class="p-8 text-center text-green-400 bg-green-400/5">
-    <div class="text-4xl mb-2">🎉</div>
-    <div class="font-bold">Perfect Architecture!</div>
-    <div class="text-sm text-green-400/70">No passive vulnerabilities were detected by the 12-bit scanner.</div>
-</td>
-</tr>
-{% endfor %}
+{% if is_ollama %}
+    {% if total_issues > 0 %}
+    <tr class="border-t border-slate-800/50 hover:bg-slate-800/20 transition">
+        <td class="p-4 text-purple-400 font-bold whitespace-nowrap">Zero-Day / Novel</td>
+        <td class="p-4 font-medium">{{ risk_label }}</td>
+        <td class="p-4 text-slate-400 text-sm max-w-md">{{ novel_details }}</td>
+        <td class="p-4"><span class="bg-red-400/10 text-red-400 px-2 py-1 rounded text-xs border border-red-400/20">Open</span></td>
+    </tr>
+    {% else %}
+    <tr>
+        <td colspan="4" class="p-8 text-center text-green-400 bg-green-400/5">
+            <div class="text-4xl mb-2">🛡️</div>
+            <div class="font-bold">Zero-Day Inspection Clean!</div>
+            <div class="text-sm text-green-400/70">Ollama inspected all raw headers and discovered no sensitive leaks or novel risks.</div>
+        </td>
+    </tr>
+    {% endif %}
+{% else %}
+    {% for vuln in found_vulns %}
+    <tr class="border-t border-slate-800/50 hover:bg-slate-800/20 transition">
+        <td class="p-4 text-cyan-400 font-bold whitespace-nowrap">Config / Header</td>
+        <td class="p-4 font-medium">{{ vuln.name }}</td>
+        <td class="p-4 text-slate-400 text-sm max-w-md">{{ vuln.description }}</td>
+        <td class="p-4"><span class="bg-red-400/10 text-red-400 px-2 py-1 rounded text-xs border border-red-400/20">Open</span></td>
+    </tr>
+    {% empty %}
+    <tr>
+        <td colspan="4" class="p-8 text-center text-green-400 bg-green-400/5">
+            <div class="text-4xl mb-2">🎉</div>
+            <div class="font-bold">Perfect Architecture!</div>
+            <div class="text-sm text-green-400/70">No passive vulnerabilities were detected by the 12-bit scanner.</div>
+        </td>
+    </tr>
+    {% endfor %}
+{% endif %}
 </tbody>
 </table>
 </div>
@@ -138,14 +162,25 @@ h1,h2,h3{font-family:"Space Grotesk",sans-serif}
 <div class="card rounded-2xl p-6">
 <h2 class="text-2xl mb-4">AI Remediation Fixes</h2>
 <ul class="space-y-3 text-slate-300">
-{% for vuln in found_vulns %}
+{% if is_ollama %}
+    {% if total_issues > 0 %}
     <li class="flex items-start gap-3">
-        <span class="text-cyan-400 mt-1">↳</span>
-        <span>{{ vuln.fix }}</span>
+        <span class="text-purple-400 mt-1">↳</span>
+        <span>{{ novel_details }}</span>
     </li>
-{% empty %}
+    {% else %}
     <li class="text-slate-500">No remediation required. The target environment is secure.</li>
-{% endfor %}
+    {% endif %}
+{% else %}
+    {% for vuln in found_vulns %}
+        <li class="flex items-start gap-3">
+            <span class="text-cyan-400 mt-1">↳</span>
+            <span>{{ vuln.fix }}</span>
+        </li>
+    {% empty %}
+        <li class="text-slate-500">No remediation required. The target environment is secure.</li>
+    {% endfor %}
+{% endif %}
 </ul>
 </div>
 
@@ -157,7 +192,12 @@ h1,h2,h3{font-family:"Space Grotesk",sans-serif}
 <p class="flex justify-between border-b border-slate-800 pb-2"><span>[03] HTTP Header Extraction</span> <span class="text-green-400">OK</span></p>
 <p class="flex justify-between border-b border-slate-800 pb-2"><span>[04] Body/Signature Mapping</span> <span class="text-green-400">OK</span></p>
 <p class="flex justify-between border-b border-slate-800 pb-2"><span>[05] 12-Bit Vector Assembly</span> <span class="text-green-400">OK</span></p>
-<p class="flex justify-between"><span>[06] ML Predictive Inference</span> <span class="text-cyan-400">COMPLETE</span></p>
+<p class="flex justify-between">
+    <span>[06] Active AI Tier</span> 
+    <span class="{% if is_ollama %}text-purple-400{% else %}text-cyan-400{% endif %}">
+        {% if is_ollama %}TIER 2 (OLLAMA LLAMA 3){% else %}TIER 1 (RANDOM FOREST){% endif %}
+    </span>
+</p>
 </div>
 </div>
 

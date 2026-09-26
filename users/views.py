@@ -73,7 +73,7 @@ def login(request):
 
             if check_password(password, user.password):
 
-                request.session["user_id"] = user.id
+                request.session['user_id'] = user.user_id
                 request.session["user_name"] = user.full_name
 
                 return redirect("dashboard")
@@ -95,8 +95,7 @@ def dashboard(request):
     if "user_id" not in request.session:
         return redirect("login")
 
-    user = User.objects.get(id=request.session["user_id"])
-
+    user = User.objects.get(user_id=request.session["user_id"])
     return render(
         request,
         "dashboard/dashboard.html",
