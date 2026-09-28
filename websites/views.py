@@ -3,17 +3,37 @@ from django.http import JsonResponse, HttpResponse
 from celery.result import AsyncResult
 from .tasks import run_vulnex_scan
 from .utils import VULNERABILITY_DICT
+from .models import Website
+from urllib.parse import urlparse
 
 def dashboard_view(request):
     """Renders the main dashboard template."""
     return render(request, 'dashboard.html')
 
 def start_scan_view(request):
-    """Handles URL submission, sends job to Celery, and loads the spinner."""
+    """Handles URL submission, saves to DB, sends job to Celery, and loads the spinner."""
     if request.method == "POST":
         target_url = request.POST.get("target_url")
         if target_url:
-            task = run_vulnex_scan.delay(target_url)
+            # Parse the domain for the website_name column
+            parsed_url = urlparse(target_url)
+            domain = parsed_url.netloc or parsed_url.path
+
+            # Assign a fallback user_id of 1 if not authenticated
+            current_user_id = request.user.id if request.user.is_authenticated else 1
+
+            # Query using the exact field names from the updated model
+            website, created = Website.objects.get_or_create(
+                website_url=target_url,
+                defaults={
+                    'website_name': domain,
+                    'user_id': current_user_id
+                }
+            )
+
+            # Pass the dynamic database ID (website_id) to the Celery task
+            task = run_vulnex_scan.delay(target_url, website_id=website.website_id)
+            
             return render(request, 'websites/loading.html', {
                 'task_id': task.id, 
                 'target_url': target_url

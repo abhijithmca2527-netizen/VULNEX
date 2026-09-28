@@ -2,15 +2,17 @@ from django.db import models
 
 class Website(models.Model):
     website_id = models.BigAutoField(primary_key=True)
-    url = models.URLField(max_length=255, unique=True)
-    created_at = models.DateTimeField(auto_now_add=True)
+    website_name = models.CharField(max_length=255, null=True, blank=True)
+    website_url = models.URLField(max_length=255, unique=True)
+    added_date = models.DateTimeField(auto_now_add=True)
+    user_id = models.IntegerField(null=True, blank=True)
 
     class Meta:
         db_table = 'WEBSITES'
         managed = False
 
     def __str__(self):
-        return self.url
+        return self.website_url
 
 
 class ScanResult(models.Model):
