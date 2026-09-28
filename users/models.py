@@ -8,6 +8,11 @@ class User(models.Model):
         db_column="user_id"
     )
 
+    role = models.CharField(
+    max_length=20,
+    default="user"
+    )
+
     full_name = models.CharField(
         max_length=100
     )

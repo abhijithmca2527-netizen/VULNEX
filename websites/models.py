@@ -8,9 +8,11 @@ from users.models import User
 
 class ScanResult(models.Model):
     target_url = models.URLField()
+
     feature_vector = models.CharField(
         max_length=100
     )
+
     created_at = models.DateTimeField(
         auto_now_add=True
     )
@@ -23,6 +25,7 @@ class SandboxThreat(models.Model):
     """Quarantined scans flagged as anomalies by the Isolation Forest."""
 
     target_url = models.URLField()
+
     feature_vector = models.CharField(
         max_length=100
     )
@@ -60,6 +63,7 @@ class SandboxThreat(models.Model):
 # ============================================================
 
 class Website(models.Model):
+
     website_id = models.AutoField(
         primary_key=True,
         db_column="website_id"
@@ -92,7 +96,15 @@ class Website(models.Model):
         return self.website_url
 
 
+# ============================================================
+# SCAN
+#
+# website = website that was scanned
+# user    = actual logged-in user who performed the scan
+# ============================================================
+
 class Scan(models.Model):
+
     scan_id = models.AutoField(
         primary_key=True,
         db_column="scan_id"
@@ -103,6 +115,21 @@ class Scan(models.Model):
         on_delete=models.DO_NOTHING,
         db_column="website_id",
         related_name="scans"
+    )
+
+    # --------------------------------------------------------
+    # ACTUAL USER WHO PERFORMED THE SCAN
+    #
+    # SCANS.user_id -> USERS.user_id
+    # --------------------------------------------------------
+
+    user = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        db_column="user_id",
+        related_name="performed_scans"
     )
 
     scan_date = models.DateTimeField(
@@ -125,13 +152,19 @@ class Scan(models.Model):
         db_table = "SCANS"
 
     def __str__(self):
+
         return (
             f"{self.website.website_url} - "
             f"{self.scan_date}"
         )
 
 
+# ============================================================
+# VULNERABILITY
+# ============================================================
+
 class Vulnerability(models.Model):
+
     vulnerability_id = models.AutoField(
         primary_key=True,
         db_column="vulnerability_id"
@@ -167,7 +200,12 @@ class Vulnerability(models.Model):
         return self.vulnerability_name
 
 
+# ============================================================
+# AI DATASET
+# ============================================================
+
 class AIDataset(models.Model):
+
     dataset_id = models.AutoField(
         primary_key=True,
         db_column="dataset_id"
@@ -207,7 +245,12 @@ class AIDataset(models.Model):
         return self.vulnerability_name
 
 
+# ============================================================
+# REPORT
+# ============================================================
+
 class Report(models.Model):
+
     report_id = models.AutoField(
         primary_key=True,
         db_column="report_id"
@@ -235,4 +278,7 @@ class Report(models.Model):
         db_table = "REPORTS"
 
     def __str__(self):
-        return f"Report {self.report_id} - Scan {self.scan_id}"
+        return (
+            f"Report {self.report_id} - "
+            f"Scan {self.scan_id}"
+        )

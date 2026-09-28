@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>VulnEx | Vulnerability Records</title>
+
+<script src="https://cdn.tailwindcss.com"></script>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+
+<style>
+body{
+    font-family:Inter,sans-serif;
+    background:#050816;
+    color:white;
+}
+
+.grid-bg{
+    position:fixed;
+    inset:0;
+    z-index:-2;
+    background-image:
+    linear-gradient(rgba(34,211,238,.04) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(34,211,238,.04) 1px,transparent 1px);
+    background-size:42px 42px;
+}
+
+.glow{
+    position:fixed;
+    top:-300px;
+    left:40%;
+    width:1000px;
+    height:900px;
+    border-radius:999px;
+    background:
+    radial-gradient(
+        circle,
+        rgba(239,68,68,.14),
+        transparent 65%
+    );
+    filter:blur(30px);
+    z-index:-1;
+}
+
+.card{
+    background:rgba(15,23,42,.82);
+    border:1px solid #1e293b;
+    backdrop-filter:blur(16px);
+}
+</style>
+</head>
+
+<body>
+
+<div class="grid-bg"></div>
+<div class="glow"></div>
+
+<nav
+class="h-16 fixed top-0 left-0 right-0 z-50
+flex items-center justify-between
+px-8
+border-b border-slate-800
+bg-slate-950/90 backdrop-blur-xl">
+
+<div class="flex items-center gap-3">
+
+<div
+class="text-2xl font-bold"
+style="font-family:'Space Grotesk'">
+Vuln<span class="text-cyan-400">Ex</span>
+</div>
+
+<span
+class="text-xs px-3 py-1 rounded-full
+bg-purple-500/10
+border border-purple-500/30
+text-purple-400 font-semibold">
+ADMIN
+</span>
+
+</div>
+
+<div class="flex items-center gap-4">
+
+<a
+href="{% url 'admin_dashboard' %}"
+class="text-sm text-slate-400 hover:text-white transition">
+← Dashboard
+</a>
+
+<a
+href="{% url 'admin_logout' %}"
+class="px-4 py-2 rounded-lg
+border border-red-400/30
+text-red-400
+hover:bg-red-400/10
+transition">
+Logout
+</a>
+
+</div>
+</nav>
+
+<main class="pt-24 px-8 pb-12 max-w-7xl mx-auto">
+
+<div class="mb-8">
+
+<p class="text-red-400 text-sm font-semibold mb-2">
+ADMIN / VULNERABILITY RECORDS
+</p>
+
+<h1
+class="text-4xl font-bold mb-3"
+style="font-family:'Space Grotesk'">
+Detected Vulnerabilities
+</h1>
+
+<p class="text-slate-400">
+Review vulnerability findings stored by VulnEx across all user scans.
+</p>
+
+</div>
+
+<div class="card rounded-2xl p-6 mb-8">
+
+<div class="flex items-center gap-4">
+
+<div
+class="w-12 h-12 rounded-xl
+bg-red-400/10
+flex items-center justify-center
+text-2xl">
+⚠️
+</div>
+
+<div>
+
+<div class="text-sm text-slate-400">
+Total Vulnerability Findings
+</div>
+
+<div class="text-3xl font-bold">
+{{ total_vulnerabilities }}
+</div>
+
+</div>
+</div>
+</div>
+
+<div class="card rounded-2xl overflow-hidden">
+
+<div class="px-6 py-5 border-b border-slate-800">
+
+<h2
+class="text-xl font-bold"
+style="font-family:'Space Grotesk'">
+All Findings
+</h2>
+
+<p class="text-sm text-slate-400 mt-1">
+Saved vulnerability records from all VulnEx security scans.
+</p>
+
+</div>
+
+<div class="overflow-x-auto">
+
+<table class="w-full text-sm">
+
+<thead>
+
+<tr
+class="text-left text-slate-400
+border-b border-slate-800
+bg-slate-900/40">
+
+<th class="px-5 py-4">ID</th>
+<th class="px-5 py-4">Vulnerability</th>
+<th class="px-5 py-4">User</th>
+<th class="px-5 py-4">Website</th>
+<th class="px-5 py-4">Scan</th>
+<th class="px-5 py-4">Issue / Evidence</th>
+<th class="px-5 py-4">Description</th>
+<th class="px-5 py-4">Risk</th>
+<th class="px-5 py-4">Date</th>
+
+</tr>
+</thead>
+
+<tbody>
+
+{% for vulnerability in vulnerabilities %}
+
+<tr
+class="border-b border-slate-800/70
+hover:bg-slate-800/30 transition
+align-top">
+
+<td class="px-5 py-4 text-slate-400">
+#{{ vulnerability.vulnerability_id }}
+</td>
+
+<td class="px-5 py-4 font-semibold min-w-[200px]">
+{{ vulnerability.vulnerability_name }}
+</td>
+
+<td class="px-5 py-4 min-w-[160px] font-semibold">
+
+{% if vulnerability.scan.user %}
+{{ vulnerability.scan.user.full_name }}
+{% else %}
+<span class="text-slate-500">Unknown</span>
+{% endif %}
+
+</td>
+
+<td
+class="px-5 py-4
+text-cyan-400
+min-w-[220px]
+max-w-xs
+break-all">
+{{ vulnerability.scan.website.website_url }}
+</td>
+
+<td class="px-5 py-4 text-slate-300">
+#{{ vulnerability.scan.scan_id }}
+</td>
+
+<td
+class="px-5 py-4
+text-yellow-300
+min-w-[260px]
+max-w-md
+break-words">
+
+{% if vulnerability.issue %}
+{{ vulnerability.issue }}
+{% else %}
+<span class="text-slate-500">No evidence stored</span>
+{% endif %}
+
+</td>
+
+<td
+class="px-5 py-4
+text-slate-300
+min-w-[260px]
+max-w-md
+break-words">
+
+{% if vulnerability.description %}
+{{ vulnerability.description }}
+{% else %}
+<span class="text-slate-500">No description</span>
+{% endif %}
+
+</td>
+
+<td class="px-5 py-4">
+
+{% if not vulnerability.scan.risk_level %}
+
+<span class="px-3 py-1 rounded-full bg-slate-500/10 text-slate-400">
+Unknown
+</span>
+
+{% elif vulnerability.scan.risk_level == "Critical" %}
+
+<span class="px-3 py-1 rounded-full bg-red-500/10 text-red-400">
+Critical
+</span>
+
+{% elif vulnerability.scan.risk_level == "High" %}
+
+<span class="px-3 py-1 rounded-full bg-orange-500/10 text-orange-400">
+High
+</span>
+
+{% elif vulnerability.scan.risk_level == "Medium" %}
+
+<span class="px-3 py-1 rounded-full bg-yellow-500/10 text-yellow-400">
+Medium
+</span>
+
+{% elif vulnerability.scan.risk_level == "Low" %}
+
+<span class="px-3 py-1 rounded-full bg-green-500/10 text-green-400">
+Low
+</span>
+
+{% elif vulnerability.scan.risk_level == "Clean" %}
+
+<span class="px-3 py-1 rounded-full bg-cyan-500/10 text-cyan-400">
+Clean
+</span>
+
+{% else %}
+
+<span class="px-3 py-1 rounded-full bg-purple-500/10 text-purple-400">
+Anomaly
+</span>
+
+{% endif %}
+
+</td>
+
+<td class="px-5 py-4 text-slate-400 min-w-[160px]">
+{{ vulnerability.scan.scan_date|date:"d M Y, h:i A" }}
+</td>
+
+</tr>
+
+{% empty %}
+
+<tr>
+<td
+colspan="9"
+class="px-6 py-10 text-center text-slate-500">
+No vulnerability records found.
+</td>
+</tr>
+
+{% endfor %}
+
+</tbody>
+</table>
+
+</div>
+</div>
+
+<div class="text-center text-xs text-slate-600 mt-10">
+VulnEx Administration System
+</div>
+
+</main>
+
+</body>
+</html>

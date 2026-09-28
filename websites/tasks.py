@@ -22,49 +22,82 @@ def run_vulnex_scan(target_url, user_id=None):
     Run the VULNEX scan.
 
     Keeps Jowin's Random Forest + Isolation Forest anomaly flow,
-    but saves normal scans into the existing Supabase tables:
-    WEBSITES -> SCANS -> VULNERABILITIES -> REPORTS.
+    but saves completed scans into the existing Supabase tables:
 
-    It does NOT use the obsolete ScanResult/websites_scanresult table.
+    USERS
+      ↓
+    WEBSITES
+      ↓
+    SCANS
+      ↓
+    VULNERABILITIES
+      ↓
+    REPORTS
+
+    SCANS.user_id stores the actual logged-in user
+    who performed the scan.
+
+    It does NOT use the obsolete ScanResult table.
     """
 
-    print(f"\n[VULNEX] Scanning: {target_url}")
+    print(
+        f"\n[VULNEX] Scanning: {target_url}"
+    )
 
     # =====================================================
     # 1. FEATURE EXTRACTION
     # =====================================================
 
-    extractor = VulnexFeatureExtractor(timeout=5)
-
-    extracted_data = extractor.extract_features(
-        target_url
+    extractor = VulnexFeatureExtractor(
+        timeout=5
     )
 
-    binary_vector = extracted_data.get(
-        "feature_vector",
-        []
+    extracted_data = (
+        extractor.extract_features(
+            target_url
+        )
     )
 
-    vulnerability_details = extracted_data.get(
-        "details",
-        {}
+    binary_vector = (
+        extracted_data.get(
+            "feature_vector",
+            []
+        )
     )
 
-    # Exact site-specific evidence for the Issue column.
+    vulnerability_details = (
+        extracted_data.get(
+            "details",
+            {}
+        )
+    )
+
+    # Exact site-specific evidence
+    # for the Issue column.
     issues = extracted_data.get(
         "issues",
         {}
     )
 
-    if not isinstance(vulnerability_details, dict):
+    if not isinstance(
+        vulnerability_details,
+        dict
+    ):
+
         vulnerability_details = {}
 
-    if not isinstance(issues, dict):
+    if not isinstance(
+        issues,
+        dict
+    ):
+
         issues = {}
 
     if len(binary_vector) != 12:
+
         raise ValueError(
-            f"Expected 12 vulnerability features, got {len(binary_vector)}."
+            "Expected 12 vulnerability "
+            f"features, got {len(binary_vector)}."
         )
 
     # =====================================================
@@ -73,8 +106,10 @@ def run_vulnex_scan(target_url, user_id=None):
 
     ai_engine = VulnexAIEngine()
 
-    ai_results = ai_engine.predict_risk(
-        binary_vector
+    ai_results = (
+        ai_engine.predict_risk(
+            binary_vector
+        )
     )
 
     risk_level = ai_results.get(
@@ -82,15 +117,22 @@ def run_vulnex_scan(target_url, user_id=None):
         "Unknown"
     )
 
-    # Random Forest confidence stays an ML value.
+    # Random Forest confidence
     confidence = ai_results.get(
         "confidence",
         0
     )
 
-    # Health Score is based on the number of detected findings.
-    # This matches the Scan History logic we built earlier:
-    # 0 findings = 100, 1 = 92, 4 = 68, etc.
+    # -----------------------------------------------------
+    # SECURITY SCORE
+    #
+    # 0 findings = 100
+    # 1 finding  = 92
+    # 2 findings = 84
+    # 3 findings = 76
+    # 4 findings = 68
+    # -----------------------------------------------------
+
     findings_count = sum(
         1
         for value in binary_vector
@@ -108,12 +150,14 @@ def run_vulnex_scan(target_url, user_id=None):
     )
 
     print(
-        f"[VULNEX] Vector: {binary_vector}"
+        f"[VULNEX] Vector: "
+        f"{binary_vector}"
     )
 
     print(
         f"[VULNEX] Risk: {risk_level} | "
-        f"Security Score: {security_score}/100"
+        f"Security Score: "
+        f"{security_score}/100"
     )
 
     # =====================================================
@@ -128,54 +172,76 @@ def run_vulnex_scan(target_url, user_id=None):
         )
 
         SandboxThreat.objects.create(
+
             target_url=target_url,
-            feature_vector=str(binary_vector),
+
+            feature_vector=str(
+                binary_vector
+            ),
+
             rf_predicted_risk=risk_level
         )
 
-        # IMPORTANT:
-        # Keep the anomaly in the sandbox, but ALSO save the
-        # completed user scan into the normal Supabase history.
-        # This ensures every completed scan appears in
-        # History and Reports.
+        # Keep anomaly in sandbox,
+        # but ALSO save completed scan
+        # into normal history.
         print(
             "[VULNEX] Anomaly quarantined. "
-            "Also saving completed scan to Supabase history..."
+            "Also saving completed scan "
+            "to Supabase history..."
         )
 
     else:
 
         print(
             "[✅ NORMAL PATTERN] "
-            "Saving to Supabase scan history..."
+            "Saving to Supabase "
+            "scan history..."
         )
 
     # =====================================================
-    # 4. SAVE EVERY COMPLETED SCAN -> REAL SUPABASE HISTORY
+    # 4. GET ACTUAL LOGGED-IN USER
     # =====================================================
 
     if not user_id:
+
         raise ValueError(
-            "A logged-in user_id is required to save the scan."
+            "A logged-in user_id is "
+            "required to save the scan."
         )
 
     try:
+
         user = User.objects.get(
-            pk=user_id
+            pk=user_id,
+            role="user"
         )
+
     except User.DoesNotExist as exc:
+
         raise ValueError(
-            f"Logged-in user {user_id} was not found."
+            f"Logged-in user {user_id} "
+            "was not found."
         ) from exc
 
-    # Normalize URL before saving.
-    normalized_url = target_url.strip()
+    # -----------------------------------------------------
+    # NORMALIZE URL
+    # -----------------------------------------------------
+
+    normalized_url = (
+        target_url.strip()
+    )
 
     if not normalized_url.startswith(
-        ("http://", "https://")
+        (
+            "http://",
+            "https://"
+        )
     ):
+
         normalized_url = (
-            "https://" + normalized_url
+            "https://"
+            + normalized_url
         )
 
     parsed_url = urlparse(
@@ -187,19 +253,31 @@ def run_vulnex_scan(target_url, user_id=None):
         or normalized_url
     )
 
-    # SCANS.security_score is an integer in the existing
-    # Supabase schema, so store a rounded integer there.
+    # -----------------------------------------------------
+    # DATABASE SECURITY SCORE
+    # -----------------------------------------------------
+
     try:
+
         db_security_score = int(
-            round(float(security_score))
+            round(
+                float(
+                    security_score
+                )
+            )
         )
-    except (TypeError, ValueError):
+
+    except (
+        TypeError,
+        ValueError
+    ):
+
         db_security_score = 0
 
     saved_vulnerabilities = []
 
     # =====================================================
-    # 5. SAVE EXISTING SUPABASE TABLES
+    # 5. SAVE TO SUPABASE
     # =====================================================
 
     with transaction.atomic():
@@ -208,16 +286,26 @@ def run_vulnex_scan(target_url, user_id=None):
         # WEBSITES
         # -------------------------------------------------
 
-        website, _ = Website.objects.get_or_create(
-            user=user,
-            website_url=normalized_url,
-            defaults={
-                "website_name": website_name
-            }
+        website, _ = (
+            Website.objects.get_or_create(
+
+                user=user,
+
+                website_url=normalized_url,
+
+                defaults={
+                    "website_name":
+                        website_name
+                }
+            )
         )
 
         if not website.website_name:
-            website.website_name = website_name
+
+            website.website_name = (
+                website_name
+            )
+
             website.save(
                 update_fields=[
                     "website_name"
@@ -226,11 +314,22 @@ def run_vulnex_scan(target_url, user_id=None):
 
         # -------------------------------------------------
         # SCANS
+        #
+        # IMPORTANT:
+        # website = website being scanned
+        # user    = user who actually performed scan
         # -------------------------------------------------
 
         scan = Scan.objects.create(
+
             website=website,
-            security_score=db_security_score,
+
+            user=user,
+
+            security_score=(
+                db_security_score
+            ),
+
             risk_level=risk_level
         )
 
@@ -246,24 +345,39 @@ def run_vulnex_scan(target_url, user_id=None):
             if not is_vulnerable:
                 continue
 
-            vuln_info = VULNERABILITY_DICT.get(
-                vuln_key,
-                {}
+            vuln_info = (
+                VULNERABILITY_DICT.get(
+                    vuln_key,
+                    {}
+                )
             )
 
-            if isinstance(vuln_info, dict):
-                vulnerability_name = vuln_info.get(
-                    "name"
+            if isinstance(
+                vuln_info,
+                dict
+            ):
+
+                vulnerability_name = (
+                    vuln_info.get(
+                        "name"
+                    )
                 )
-                description = vuln_info.get(
-                    "description"
+
+                description = (
+                    vuln_info.get(
+                        "description"
+                    )
                 )
+
             else:
+
                 vulnerability_name = None
                 description = None
 
             vulnerability_name = (
+
                 vulnerability_name
+
                 or vuln_key.replace(
                     "_",
                     " "
@@ -271,21 +385,36 @@ def run_vulnex_scan(target_url, user_id=None):
             )
 
             description = (
+
                 description
-                or
-                "Detected by VulnEx passive security analysis."
+
+                or (
+                    "Detected by VulnEx "
+                    "passive security analysis."
+                )
             )
 
             issue = issues.get(
+
                 vuln_key,
-                "Issue detected during passive security analysis."
+
+                (
+                    "Issue detected during "
+                    "passive security analysis."
+                )
             )
 
             vulnerability = (
                 Vulnerability.objects.create(
+
                     scan=scan,
-                    vulnerability_name=vulnerability_name,
+
+                    vulnerability_name=(
+                        vulnerability_name
+                    ),
+
                     issue=issue,
+
                     description=description
                 )
             )
@@ -299,7 +428,9 @@ def run_vulnex_scan(target_url, user_id=None):
         # -------------------------------------------------
 
         report = Report.objects.create(
+
             scan=scan,
+
             report_file=""
         )
 
@@ -308,15 +439,23 @@ def run_vulnex_scan(target_url, user_id=None):
     # =====================================================
 
     print(
-        f"[VULNEX] User PK: {user.pk}"
+        f"[VULNEX] User PK: "
+        f"{user.pk}"
     )
 
     print(
-        f"[VULNEX] Website PK: {website.pk}"
+        f"[VULNEX] Scan Owner: "
+        f"{user.full_name}"
     )
 
     print(
-        f"[VULNEX] Scan PK: {scan.pk}"
+        f"[VULNEX] Website PK: "
+        f"{website.pk}"
+    )
+
+    print(
+        f"[VULNEX] Scan PK: "
+        f"{scan.pk}"
     )
 
     print(
@@ -325,7 +464,8 @@ def run_vulnex_scan(target_url, user_id=None):
     )
 
     print(
-        f"[VULNEX] Issues: {issues}"
+        f"[VULNEX] Issues: "
+        f"{issues}"
     )
 
     print(
@@ -333,20 +473,50 @@ def run_vulnex_scan(target_url, user_id=None):
     )
 
     # =====================================================
-    # 7. DATA RETURNED TO report.html
+    # 7. DATA RETURNED TO REPORT.HTML
     # =====================================================
 
     return {
-        "url": normalized_url,
-        "vector": binary_vector,
-        "vulnerability_details": vulnerability_details,
-        "issues": issues,
-        "risk_category": risk_level,
-        "security_score": db_security_score,
-        "confidence": confidence,
-        "is_anomaly": bool(is_anomaly),
-        "scan_id": scan.pk,
-        "website_id": website.pk,
-        "report_id": report.pk,
-        "ai_prediction": ai_results,
+
+        "url":
+            normalized_url,
+
+        "vector":
+            binary_vector,
+
+        "vulnerability_details":
+            vulnerability_details,
+
+        "issues":
+            issues,
+
+        "risk_category":
+            risk_level,
+
+        "security_score":
+            db_security_score,
+
+        "confidence":
+            confidence,
+
+        "is_anomaly":
+            bool(is_anomaly),
+
+        "user_id":
+            user.pk,
+
+        "user_name":
+            user.full_name,
+
+        "scan_id":
+            scan.pk,
+
+        "website_id":
+            website.pk,
+
+        "report_id":
+            report.pk,
+
+        "ai_prediction":
+            ai_results,
     }
