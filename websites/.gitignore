@@ -1,0 +1,6 @@
+*.pyc
+*__pycache__*
+db.sqlite3
+.env
+myenv/      # Change "myenv" to your virtual environment folder name
+.vscode/

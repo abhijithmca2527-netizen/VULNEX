@@ -1,0 +1,583 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>VulnEx — AI-Powered Web Vulnerability Scanner</title>
+
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        colors: {
+          void: '#030712',
+          panel: '#0F172A',
+          panelsoft: '#131C31',
+          line: '#1E293B',
+          cyan: { DEFAULT: '#22D3EE' },
+          violet: { DEFAULT: '#7C3AED' },
+          crit: '#F43F5E', high: '#FB923C', med: '#FACC15', low: '#34D399'
+        },
+        fontFamily: {
+          display: ['"Space Grotesk"', 'sans-serif'],
+          body: ['"Inter"', 'sans-serif'],
+          mono: ['"JetBrains Mono"', 'monospace']
+        },
+        boxShadow: {
+          'glow-cyan': '0 0 0 1px rgba(34,211,238,0.4), 0 0 24px rgba(34,211,238,0.25)',
+          'glow-violet': '0 0 0 1px rgba(124,58,237,0.4), 0 0 24px rgba(124,58,237,0.25)'
+        }
+      }
+    }
+  }
+</script>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+<style>
+  html { scroll-behavior: smooth; }
+  body { background-color: #030712; }
+
+  .grid-backdrop {
+    background-image:
+      linear-gradient(rgba(34,211,238,0.05) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(34,211,238,0.05) 1px, transparent 1px);
+    background-size: 42px 42px;
+  }
+  .radial-glow { background: radial-gradient(700px circle at 50% 0%, rgba(124,58,237,0.18), transparent 60%); }
+
+  ::-webkit-scrollbar { width: 8px; height: 8px; }
+  ::-webkit-scrollbar-track { background: #030712; }
+  ::-webkit-scrollbar-thumb { background: #1E293B; border-radius: 4px; }
+  ::-webkit-scrollbar-thumb:hover { background: #22D3EE55; }
+
+  #navbar { transition: background-color 0.3s ease, border-color 0.3s ease, backdrop-filter 0.3s ease; }
+  #navbar.scrolled { background-color: rgba(3,7,18,0.85); backdrop-filter: blur(10px); border-color: #1E293B; }
+
+  .marquee-track { animation: marquee 28s linear infinite; }
+  @keyframes marquee { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+
+  .accordion-panel { max-height: 0; overflow: hidden; transition: max-height 0.35s ease; }
+  .accordion-item.open .accordion-panel { max-height: 600px; }
+  .accordion-item.open .chevron { transform: rotate(180deg); }
+  .chevron { transition: transform 0.25s ease; }
+
+  .severity-dot { box-shadow: 0 0 8px currentColor; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .marquee-track { animation: none; }
+    html { scroll-behavior: auto; }
+  }
+  .footer-ascii {
+    position: relative;
+    width: 100%;
+    overflow: hidden;
+    background: #050816;
+    height: 320px;
+    
+}
+
+.footer-ascii pre{
+    position:absolute;
+
+    left:50%;
+    top:50px;
+
+    transform: translateX(-50%) scaleX(1.5) scaleY(1);
+transform-origin: center top;
+
+    margin:0;
+
+    font-family:"JetBrains Mono", monospace;
+    font-weight:900;
+
+    font-size:42px;      /* BIG */
+    line-height:34px;
+    letter-spacing:-5px;
+
+    color:#7478ff;
+
+    opacity:.22;
+
+    white-space:pre;
+
+    pointer-events:none;
+    user-select:none;
+}
+</style>
+</head>
+
+<body class="font-body text-slate-200 antialiased">
+
+<!-- ============ NAVBAR ============ -->
+<header id="navbar" class="fixed top-0 inset-x-0 z-50 border-b border-transparent">
+  <div class="max-w-7xl mx-auto px-5 sm:px-8">
+    <div class="flex items-center justify-between h-16">
+      <a href="#" class="flex items-center gap-2">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" class="text-cyan"><path d="M12 2L3 6v6c0 5 3.8 8.7 9 10 5.2-1.3 9-5 9-10V6l-9-4z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M9 12l2 2 4-4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <span class="font-display font-semibold text-lg text-white">Vuln<span class="text-cyan">Ex</span></span>
+      </a>
+
+      <nav class="hidden lg:flex items-center gap-1 font-medium text-sm">
+        <div class="relative group">
+          <button class="flex items-center gap-1 px-3.5 py-2 text-slate-300 hover:text-white rounded-lg transition">
+            Product
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" class="opacity-60"><path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+          <div class="absolute top-full left-0 pt-2 w-72 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition">
+            <div class="bg-panel border border-line rounded-xl shadow-2xl shadow-black/50 p-2">
+              <a href="#features" class="block px-3.5 py-2.5 rounded-lg hover:bg-panelsoft text-slate-300 hover:text-cyan">
+                <span class="block font-medium">AI Vulnerability Scanning</span>
+                <span class="block text-xs text-slate-500 mt-0.5">Automated OWASP Top 10 detection</span>
+              </a>
+              <a href="#scan-types" class="block px-3.5 py-2.5 rounded-lg hover:bg-panelsoft text-slate-300 hover:text-cyan">
+                <span class="block font-medium">Quick &amp; Deep Scans</span>
+                <span class="block text-xs text-slate-500 mt-0.5">Pick the depth that fits your workflow</span>
+              </a>
+              <a href="#benefits" class="block px-3.5 py-2.5 rounded-lg hover:bg-panelsoft text-slate-300 hover:text-cyan">
+                <span class="block font-medium">Risk &amp; Compliance</span>
+                <span class="block text-xs text-slate-500 mt-0.5">SOC 2 and ISO 27001-ready reporting</span>
+              </a>
+            </div>
+          </div>
+        </div>
+        <a href="#vulnerabilities" class="px-3.5 py-2 text-slate-300 hover:text-white rounded-lg transition">Coverage</a>
+        <a href="#pricing" class="px-3.5 py-2 text-slate-300 hover:text-white rounded-lg transition">Pricing</a>
+        <a href="#faq" class="px-3.5 py-2 text-slate-300 hover:text-white rounded-lg transition">FAQ</a>
+      </nav>
+
+      <div class="hidden lg:flex items-center gap-2">
+        <a href="{% url 'login' %}" class="px-4 py-2 text-sm font-medium text-slate-300 hover:text-white transition">Log in</a>
+        <a href="{% url 'register' %}" class="px-4 py-2 text-sm font-semibold bg-cyan text-void rounded-lg hover:shadow-glow-cyan transition-shadow">Sign up free</a>
+      </div>
+
+      <button onclick="toggleMobileNav()" class="lg:hidden text-slate-300 p-2">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M4 6h16M4 12h16M4 18h16" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- Mobile nav -->
+  <div id="mobile-nav" class="hidden lg:hidden bg-panel border-b border-line px-5 py-4 space-y-1">
+    <a href="#features" class="block px-3 py-2.5 rounded-lg text-sm text-slate-300 hover:bg-panelsoft">Product</a>
+    <a href="#vulnerabilities" class="block px-3 py-2.5 rounded-lg text-sm text-slate-300 hover:bg-panelsoft">Coverage</a>
+    <a href="#pricing" class="block px-3 py-2.5 rounded-lg text-sm text-slate-300 hover:bg-panelsoft">Pricing</a>
+    <a href="#faq" class="block px-3 py-2.5 rounded-lg text-sm text-slate-300 hover:bg-panelsoft">FAQ</a>
+    <div class="pt-3 mt-2 border-t border-line flex flex-col gap-2">
+      <a href="{% url 'login' %}" class="text-center px-4 py-2.5 text-sm font-medium text-slate-300 border border-line rounded-lg">Log in</a>
+      <a href="{% url 'register' %}" class="text-center px-4 py-2.5 text-sm font-semibold bg-cyan text-void rounded-lg">Sign up free</a>
+    </div>
+  </div>
+</header>
+
+<!-- ============ HERO ============ -->
+<section class="relative grid-backdrop radial-glow pt-40 pb-24 px-5 sm:px-8 border-b border-line overflow-hidden">
+  <div class="max-w-4xl mx-auto text-center">
+    <span class="inline-flex items-center gap-1.5 text-xs font-mono text-violet bg-violet/10 border border-violet/30 px-3 py-1 rounded-full mb-6">
+      AI-assisted triage · OWASP Top 10 coverage
+    </span>
+    <h1 class="font-display text-4xl sm:text-5xl lg:text-6xl font-semibold text-white leading-tight">
+      Find vulnerabilities before <span class="text-cyan">attackers</span> do
+    </h1>
+    <p class="text-slate-400 text-base sm:text-lg mt-5 max-w-2xl mx-auto">
+      Point VulnEx at any URL. Our AI engine crawls, tests, and prioritizes real risk — then hands you a plain-English report your whole team can act on.
+    </p>
+
+    <form class="mt-9 max-w-xl mx-auto flex flex-col sm:flex-row gap-3" onsubmit="event.preventDefault();">
+      <input type="text" placeholder="https://your-target.com" required
+        class="flex-1 bg-panelsoft border border-line rounded-xl px-4 py-3.5 text-sm font-mono text-slate-100 placeholder-slate-500 focus:outline-none focus:border-cyan focus:shadow-glow-cyan transition" />
+      <button type="submit" class="shrink-0 bg-cyan text-void font-semibold text-sm rounded-xl px-6 py-3.5 hover:shadow-glow-cyan transition-shadow">
+        Scan now — free
+      </button>
+    </form>
+    <p class="text-xs text-slate-500 mt-3">No credit card required · Results in minutes</p>
+
+    <div class="flex flex-wrap items-center justify-center gap-x-10 gap-y-4 mt-14">
+      <div class="text-center">
+        <p class="font-display text-2xl font-semibold text-white">300+</p>
+        <p class="text-xs text-slate-500 mt-1">vulnerability checks</p>
+      </div>
+      <div class="text-center">
+        <p class="font-display text-2xl font-semibold text-white">OWASP Top 10</p>
+        <p class="text-xs text-slate-500 mt-1">full coverage</p>
+      </div>
+      <div class="text-center">
+        <p class="font-display text-2xl font-semibold text-white">&lt; 2 min</p>
+        <p class="text-xs text-slate-500 mt-1">avg. quick scan</p>
+      </div>
+      <div class="text-center">
+        <p class="font-display text-2xl font-semibold text-white">SOC 2</p>
+        <p class="text-xs text-slate-500 mt-1">ready reporting</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ LOGOS STRIP ============ -->
+<section class="border-b border-line py-10 overflow-hidden bg-panel/40">
+  <p class="text-center text-xs uppercase tracking-wider text-slate-500 mb-6">Trusted by engineering teams at</p>
+  <div class="relative max-w-6xl mx-auto overflow-hidden [mask-image:linear-gradient(to_right,transparent,black_10%,black_90%,transparent)]">
+    <div class="flex gap-16 marquee-track w-max font-display font-semibold text-xl text-slate-600">
+      <span>Northbridge</span><span>Acme Labs</span><span>Lumara</span><span>Devkit</span><span>Coastal&nbsp;Systems</span><span>Fernway</span><span>Orbital&nbsp;Health</span>
+      <span>Northbridge</span><span>Acme Labs</span><span>Lumara</span><span>Devkit</span><span>Coastal&nbsp;Systems</span><span>Fernway</span><span>Orbital&nbsp;Health</span>
+    </div>
+  </div>
+</section>
+
+<!-- ============ FEATURES ============ -->
+<section id="features" class="max-w-7xl mx-auto px-5 sm:px-8 py-24 border-b border-line">
+  <div class="max-w-2xl mb-14">
+    <span class="text-xs font-mono text-cyan uppercase tracking-wider">Scanner highlights</span>
+    <h2 class="font-display text-3xl sm:text-4xl font-semibold text-white mt-3">Everything you need, none of the setup</h2>
+    <p class="text-slate-400 mt-4">Skip provisioning scanners or babysitting scan queues. VulnEx runs the whole pipeline in the cloud and surfaces only what matters.</p>
+  </div>
+
+  <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
+    <div class="bg-panel border border-line rounded-2xl p-6 hover:border-cyan/40 transition">
+      <div class="w-10 h-10 rounded-lg bg-cyan/10 border border-cyan/30 flex items-center justify-center text-cyan mb-4">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M12 2l9 4v6c0 5-3.8 8.7-9 10-5.2-1.3-9-5-9-10V6l9-4z" stroke="currentColor" stroke-width="1.6"/></svg>
+      </div>
+      <h3 class="font-display font-semibold text-white mb-1.5">OWASP Top 10 detection</h3>
+      <p class="text-sm text-slate-400">Catches SQL injection, XSS, broken access control, and the rest of the Top 10 out of the box.</p>
+    </div>
+    <div class="bg-panel border border-line rounded-2xl p-6 hover:border-cyan/40 transition">
+      <div class="w-10 h-10 rounded-lg bg-violet/10 border border-violet/30 flex items-center justify-center text-violet mb-4">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><rect x="3" y="4" width="18" height="16" rx="2" stroke="currentColor" stroke-width="1.6"/><path d="M3 9h18" stroke="currentColor" stroke-width="1.6"/></svg>
+      </div>
+      <h3 class="font-display font-semibold text-white mb-1.5">Modern app support</h3>
+      <p class="text-sm text-slate-400">Crawls traditional server-rendered sites and React, Vue, or Angular single-page apps alike.</p>
+    </div>
+    <div class="bg-panel border border-line rounded-2xl p-6 hover:border-cyan/40 transition">
+      <div class="w-10 h-10 rounded-lg bg-cyan/10 border border-cyan/30 flex items-center justify-center text-cyan mb-4">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.6"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M5.6 18.4l2.1-2.1M16.3 7.7l2.1-2.1" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+      </div>
+      <h3 class="font-display font-semibold text-white mb-1.5">AI-prioritized findings</h3>
+      <p class="text-sm text-slate-400">Findings are ranked by real-world exploitability, not raw CVSS, so your team fixes what matters first.</p>
+    </div>
+    <div class="bg-panel border border-line rounded-2xl p-6 hover:border-cyan/40 transition">
+      <div class="w-10 h-10 rounded-lg bg-violet/10 border border-violet/30 flex items-center justify-center text-violet mb-4">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M4 17V7a2 2 0 012-2h8l6 6v6a2 2 0 01-2 2H6a2 2 0 01-2-2z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>
+      </div>
+      <h3 class="font-display font-semibold text-white mb-1.5">Dependency scanning</h3>
+      <p class="text-sm text-slate-400">Flags outdated or vulnerable JavaScript libraries hiding in your front-end bundle.</p>
+    </div>
+    <div class="bg-panel border border-line rounded-2xl p-6 hover:border-cyan/40 transition">
+      <div class="w-10 h-10 rounded-lg bg-cyan/10 border border-cyan/30 flex items-center justify-center text-cyan mb-4">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M12 20l-7-4V8l7-4 7 4v8l-7 4z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M12 12l7-4M12 12v8M12 12L5 8" stroke="currentColor" stroke-width="1.6"/></svg>
+      </div>
+      <h3 class="font-display font-semibold text-white mb-1.5">API scanning</h3>
+      <p class="text-sm text-slate-400">Import an OpenAPI spec for deeper endpoint-by-endpoint coverage of your APIs.</p>
+    </div>
+    <div class="bg-panel border border-line rounded-2xl p-6 hover:border-cyan/40 transition">
+      <div class="w-10 h-10 rounded-lg bg-violet/10 border border-violet/30 flex items-center justify-center text-violet mb-4">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><rect x="4" y="10" width="16" height="10" rx="2" stroke="currentColor" stroke-width="1.6"/><path d="M8 10V7a4 4 0 018 0v3" stroke="currentColor" stroke-width="1.6"/></svg>
+      </div>
+      <h3 class="font-display font-semibold text-white mb-1.5">Authenticated scans</h3>
+      <p class="text-sm text-slate-400">Scan behind a login using a recorded session to test what real users can reach.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============ MID CTA BANNER ============ -->
+<section class="border-b border-line px-5 sm:px-8 py-16 relative overflow-hidden">
+  <div class="absolute inset-0 radial-glow"></div>
+  <div class="relative max-w-3xl mx-auto text-center">
+    <h2 class="font-display text-2xl sm:text-3xl font-semibold text-white">Ready to run your first scan?</h2>
+    <p class="text-slate-400 mt-3">Free to start. No installation, no agents, no maintenance.</p>
+    <a href="#" class="inline-block mt-6 bg-cyan text-void font-semibold text-sm rounded-xl px-7 py-3.5 hover:shadow-glow-cyan transition-shadow">Scan now — free</a>
+  </div>
+</section>
+
+<!-- ============ SCAN TYPES ============ -->
+<section id="scan-types" class="max-w-7xl mx-auto px-5 sm:px-8 py-24 border-b border-line">
+  <div class="max-w-2xl mb-14">
+    <span class="text-xs font-mono text-violet uppercase tracking-wider">Scan depth</span>
+    <h2 class="font-display text-3xl sm:text-4xl font-semibold text-white mt-3">Two scan modes, one dashboard</h2>
+    <p class="text-slate-400 mt-4">Start light, then go deep once you know where to look.</p>
+  </div>
+
+  <div class="grid lg:grid-cols-2 gap-6">
+    <div class="bg-panel border border-line rounded-2xl p-7">
+      <span class="text-xs font-mono text-low bg-low/10 border border-low/30 px-2.5 py-1 rounded-full">Passive</span>
+      <h3 class="font-display text-xl font-semibold text-white mt-4 mb-2">Quick Scan</h3>
+      <p class="text-sm text-slate-400 mb-5">Loads your pages and checks for misconfigurations, insecure cookies, and vulnerable JS dependencies — without touching your data.</p>
+      <ul class="space-y-2.5 text-sm text-slate-300">
+        <li class="flex items-center gap-2"><span class="w-1.5 h-1.5 rounded-full bg-low severity-dot"></span>Fast — completes in a couple of minutes</li>
+        <li class="flex items-center gap-2"><span class="w-1.5 h-1.5 rounded-full bg-low severity-dot"></span>Safe — non-intrusive, read-only scanning</li>
+        <li class="flex items-center gap-2"><span class="w-1.5 h-1.5 rounded-full bg-low severity-dot"></span>Covers configuration &amp; informational issues</li>
+      </ul>
+    </div>
+    <div class="bg-panel border border-cyan/30 rounded-2xl p-7 relative">
+      <span class="text-xs font-mono text-crit bg-crit/10 border border-crit/30 px-2.5 py-1 rounded-full">Active</span>
+      <h3 class="font-display text-xl font-semibold text-white mt-4 mb-2">Deep Scan</h3>
+      <p class="text-sm text-slate-400 mb-5">Submits forms and requests to actively test for SQL injection, command execution, and cross-site scripting.</p>
+      <ul class="space-y-2.5 text-sm text-slate-300">
+        <li class="flex items-center gap-2"><span class="w-1.5 h-1.5 rounded-full bg-crit severity-dot"></span>Thorough — full-depth vulnerability coverage</li>
+        <li class="flex items-center gap-2"><span class="w-1.5 h-1.5 rounded-full bg-crit severity-dot"></span>Requires authorization on the target</li>
+        <li class="flex items-center gap-2"><span class="w-1.5 h-1.5 rounded-full bg-crit severity-dot"></span>May take up to an hour for full coverage</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ============ VULNERABILITY COVERAGE (ACCORDION) ============ -->
+<section id="vulnerabilities" class="max-w-4xl mx-auto px-5 sm:px-8 py-24 border-b border-line">
+  <div class="mb-12">
+    <span class="text-xs font-mono text-cyan uppercase tracking-wider">Coverage</span>
+    <h2 class="font-display text-3xl sm:text-4xl font-semibold text-white mt-3">Hundreds of checks, organized by category</h2>
+    <p class="text-slate-400 mt-4">A sample of what VulnEx tests for in every deep scan.</p>
+  </div>
+
+  <div class="space-y-3" id="vuln-accordion">
+    <div class="accordion-item bg-panel border border-line rounded-xl overflow-hidden">
+      <button onclick="toggleAccordion(this)" class="w-full flex items-center justify-between px-5 py-4 text-left">
+        <span class="font-medium text-slate-100">Information Disclosure <span class="text-slate-500 font-mono text-xs ml-2">19 checks</span></span>
+        <svg class="chevron w-4 h-4 text-slate-400 shrink-0" viewBox="0 0 24 24" fill="none"><path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      </button>
+      <div class="accordion-panel px-5">
+        <ul class="pb-4 text-sm text-slate-400 space-y-1.5 font-mono">
+          <li>· Debug error messages exposed in responses</li>
+          <li>· Sensitive data leaked in URLs or referrer headers</li>
+          <li>· .env and .htaccess file exposure</li>
+          <li>· Cookie poisoning and insecure cookie flags</li>
+          <li>· Private IP address disclosure</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="accordion-item bg-panel border border-line rounded-xl overflow-hidden">
+      <button onclick="toggleAccordion(this)" class="w-full flex items-center justify-between px-5 py-4 text-left">
+        <span class="font-medium text-slate-100">Configuration Issues <span class="text-slate-500 font-mono text-xs ml-2">17 checks</span></span>
+        <svg class="chevron w-4 h-4 text-slate-400 shrink-0" viewBox="0 0 24 24" fill="none"><path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      </button>
+      <div class="accordion-panel px-5">
+        <ul class="pb-4 text-sm text-slate-400 space-y-1.5 font-mono">
+          <li>· Missing or misconfigured security headers</li>
+          <li>· Directory listing enabled</li>
+          <li>· Default or sample admin pages left accessible</li>
+          <li>· CORS misconfiguration</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="accordion-item bg-panel border border-line rounded-xl overflow-hidden">
+      <button onclick="toggleAccordion(this)" class="w-full flex items-center justify-between px-5 py-4 text-left">
+        <span class="font-medium text-slate-100">Injection Vulnerabilities <span class="text-slate-500 font-mono text-xs ml-2">15 checks</span></span>
+        <svg class="chevron w-4 h-4 text-slate-400 shrink-0" viewBox="0 0 24 24" fill="none"><path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      </button>
+      <div class="accordion-panel px-5">
+        <ul class="pb-4 text-sm text-slate-400 space-y-1.5 font-mono">
+          <li>· SQL injection across form fields and parameters</li>
+          <li>· Command injection in user-supplied input</li>
+          <li>· LDAP and XPath injection</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="accordion-item bg-panel border border-line rounded-xl overflow-hidden">
+      <button onclick="toggleAccordion(this)" class="w-full flex items-center justify-between px-5 py-4 text-left">
+        <span class="font-medium text-slate-100">Cross-Site Scripting (XSS) <span class="text-slate-500 font-mono text-xs ml-2">6 checks</span></span>
+        <svg class="chevron w-4 h-4 text-slate-400 shrink-0" viewBox="0 0 24 24" fill="none"><path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      </button>
+      <div class="accordion-panel px-5">
+        <ul class="pb-4 text-sm text-slate-400 space-y-1.5 font-mono">
+          <li>· Reflected XSS in query parameters</li>
+          <li>· Stored XSS in form submissions</li>
+          <li>· DOM-based XSS in client-side scripts</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="accordion-item bg-panel border border-line rounded-xl overflow-hidden">
+      <button onclick="toggleAccordion(this)" class="w-full flex items-center justify-between px-5 py-4 text-left">
+        <span class="font-medium text-slate-100">Cryptographic Vulnerabilities <span class="text-slate-500 font-mono text-xs ml-2">10 checks</span></span>
+        <svg class="chevron w-4 h-4 text-slate-400 shrink-0" viewBox="0 0 24 24" fill="none"><path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      </button>
+      <div class="accordion-panel px-5">
+        <ul class="pb-4 text-sm text-slate-400 space-y-1.5 font-mono">
+          <li>· Weak TLS/SSL cipher suites</li>
+          <li>· Expired or self-signed certificates</li>
+          <li>· Mixed content over HTTP</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+  <p class="text-center text-xs text-slate-500 mt-6">Plus hundreds more checks updated continuously as new CVEs are published.</p>
+</section>
+
+<!-- ============ BENEFITS (ALTERNATING) ============ -->
+<section id="benefits" class="max-w-7xl mx-auto px-5 sm:px-8 py-24 border-b border-line space-y-20">
+  <div class="text-center max-w-2xl mx-auto mb-4">
+    <span class="text-xs font-mono text-violet uppercase tracking-wider">Why teams use VulnEx</span>
+    <h2 class="font-display text-3xl sm:text-4xl font-semibold text-white mt-3">Strengthen your security posture</h2>
+  </div>
+
+  <div class="grid lg:grid-cols-2 gap-10 items-center">
+    <div class="bg-panel border border-line rounded-2xl aspect-video flex items-center justify-center order-2 lg:order-1">
+      <svg width="120" height="120" viewBox="0 0 24 24" fill="none" class="text-cyan/60"><path d="M12 2l9 4v6c0 5-3.8 8.7-9 10-5.2-1.3-9-5-9-10V6l9-4z" stroke="currentColor" stroke-width="1.2"/><path d="M9 12l2 2 4-4" stroke="currentColor" stroke-width="1.2"/></svg>
+    </div>
+    <div class="order-1 lg:order-2">
+      <h3 class="font-display text-2xl font-semibold text-white mb-3">Mitigate vulnerabilities with AI-ranked priority</h3>
+      <p class="text-slate-400">VulnEx doesn't just list findings — it scores each one by real exploitability, so your team fixes what actually puts you at risk first, instead of chasing every low-severity note.</p>
+    </div>
+  </div>
+
+  <div class="grid lg:grid-cols-2 gap-10 items-center">
+    <div>
+      <h3 class="font-display text-2xl font-semibold text-white mb-3">Manage your risk exposure over time</h3>
+      <p class="text-slate-400">Track every scan, target, and resolved issue in one history view. Watch your risk trend down as your team closes findings sprint over sprint.</p>
+    </div>
+    <div class="bg-panel border border-line rounded-2xl aspect-video flex items-center justify-center">
+      <svg width="120" height="120" viewBox="0 0 24 24" fill="none" class="text-violet/60"><path d="M4 19V5M4 19h16" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/><path d="M8 16l3-4 3 2 4-6" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </div>
+  </div>
+
+  <div class="grid lg:grid-cols-2 gap-10 items-center">
+    <div class="bg-panel border border-line rounded-2xl aspect-video flex items-center justify-center order-2 lg:order-1">
+      <svg width="120" height="120" viewBox="0 0 24 24" fill="none" class="text-cyan/60"><path d="M9 12l2 2 4-4M7.8 4.2a9 9 0 018.4 0M4.2 7.8a9 9 0 000 8.4M19.8 7.8a9 9 0 010 8.4M7.8 19.8a9 9 0 008.4 0" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+    </div>
+    <div class="order-1 lg:order-2">
+      <h3 class="font-display text-2xl font-semibold text-white mb-3">Meet compliance requirements</h3>
+      <p class="text-slate-400">Export audit-ready reports formatted for SOC 2, ISO 27001, and cyber-insurance questionnaires — no manual reformatting required.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============ FAQ ============ -->
+<section id="faq" class="max-w-3xl mx-auto px-5 sm:px-8 py-24">
+  <div class="text-center mb-12">
+    <span class="text-xs font-mono text-cyan uppercase tracking-wider">Quick answers</span>
+    <h2 class="font-display text-3xl sm:text-4xl font-semibold text-white mt-3">Frequently asked questions</h2>
+  </div>
+
+  <div class="space-y-3" id="faq-accordion">
+    <div class="accordion-item bg-panel border border-line rounded-xl overflow-hidden">
+      <button onclick="toggleAccordion(this)" class="w-full flex items-center justify-between px-5 py-4 text-left">
+        <span class="font-medium text-slate-100">Do I need to install anything to run a scan?</span>
+        <svg class="chevron w-4 h-4 text-slate-400 shrink-0" viewBox="0 0 24 24" fill="none"><path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      </button>
+      <div class="accordion-panel px-5">
+        <p class="pb-4 text-sm text-slate-400">No. VulnEx runs entirely in the cloud — just enter a URL and start scanning from your browser.</p>
+      </div>
+    </div>
+    <div class="accordion-item bg-panel border border-line rounded-xl overflow-hidden">
+      <button onclick="toggleAccordion(this)" class="w-full flex items-center justify-between px-5 py-4 text-left">
+        <span class="font-medium text-slate-100">Can I scan a site that requires a login?</span>
+        <svg class="chevron w-4 h-4 text-slate-400 shrink-0" viewBox="0 0 24 24" fill="none"><path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      </button>
+      <div class="accordion-panel px-5">
+        <p class="pb-4 text-sm text-slate-400">Yes — record a session once and VulnEx will reuse it to scan pages behind authentication.</p>
+      </div>
+    </div>
+    <div class="accordion-item bg-panel border border-line rounded-xl overflow-hidden">
+      <button onclick="toggleAccordion(this)" class="w-full flex items-center justify-between px-5 py-4 text-left">
+        <span class="font-medium text-slate-100">Will a Deep Scan affect my production site?</span>
+        <svg class="chevron w-4 h-4 text-slate-400 shrink-0" viewBox="0 0 24 24" fill="none"><path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      </button>
+      <div class="accordion-panel px-5">
+        <p class="pb-4 text-sm text-slate-400">Active testing submits real requests, so we recommend running Deep Scans against staging when possible, and always with authorization.</p>
+      </div>
+    </div>
+    <div class="accordion-item bg-panel border border-line rounded-xl overflow-hidden">
+      <button onclick="toggleAccordion(this)" class="w-full flex items-center justify-between px-5 py-4 text-left">
+        <span class="font-medium text-slate-100">Is there a free plan?</span>
+        <svg class="chevron w-4 h-4 text-slate-400 shrink-0" viewBox="0 0 24 24" fill="none"><path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      </button>
+      <div class="accordion-panel px-5">
+        <p class="pb-4 text-sm text-slate-400">Yes, every account can run Quick Scans for free. Deep Scans and continuous monitoring are available on paid plans.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ FINAL CTA ============ -->
+<section class="border-t border-line px-5 sm:px-8 py-20 text-center relative overflow-hidden">
+  <div class="absolute inset-0 radial-glow"></div>
+  <div class="relative">
+    <h2 class="font-display text-3xl sm:text-4xl font-semibold text-white">Speed and power, without the complexity</h2>
+    <p class="text-slate-400 mt-3">Start scanning in the time it takes to read this sentence.</p>
+    <a href="#" class="inline-block mt-7 bg-cyan text-void font-semibold text-sm rounded-xl px-7 py-3.5 hover:shadow-glow-cyan transition-shadow">Scan now — free</a>
+  </div>
+</section>
+
+<!-- ============ FOOTER ============ -->
+<footer class="border-t border-line px-5 sm:px-8 py-14 bg-panel/40">
+  <div class="max-w-7xl mx-auto grid sm:grid-cols-2 lg:grid-cols-5 gap-10">
+    <div class="lg:col-span-1">
+      <div class="flex items-center gap-2 mb-3">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" class="text-cyan"><path d="M12 2L3 6v6c0 5 3.8 8.7 9 10 5.2-1.3 9-5 9-10V6l-9-4z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M9 12l2 2 4-4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <span class="font-display font-semibold text-white">Vuln<span class="text-cyan">Ex</span></span>
+      </div>
+      <p class="text-xs text-slate-500">AI-powered web vulnerability scanning, built for developers.</p>
+    </div>
+    <div>
+      <p class="text-xs font-semibold text-slate-300 uppercase tracking-wider mb-3">Product</p>
+      <ul class="space-y-2 text-sm text-slate-500">
+        <li><a href="#features" class="hover:text-cyan">Features</a></li>
+        <li><a href="#scan-types" class="hover:text-cyan">Scan types</a></li>
+        <li><a href="#vulnerabilities" class="hover:text-cyan">Coverage</a></li>
+        <li><a href="#pricing" class="hover:text-cyan">Pricing</a></li>
+      </ul>
+    </div>
+    <div>
+      <p class="text-xs font-semibold text-slate-300 uppercase tracking-wider mb-3">Company</p>
+      <ul class="space-y-2 text-sm text-slate-500">
+        <li><a href="#" class="hover:text-cyan">About</a></li>
+        <li><a href="#" class="hover:text-cyan">Blog</a></li>
+        <li><a href="#" class="hover:text-cyan">Careers</a></li>
+      </ul>
+    </div>
+    <div>
+      <p class="text-xs font-semibold text-slate-300 uppercase tracking-wider mb-3">Resources</p>
+      <ul class="space-y-2 text-sm text-slate-500">
+        <li><a href="#faq" class="hover:text-cyan">FAQ</a></li>
+        <li><a href="#" class="hover:text-cyan">Documentation</a></li>
+        <li><a href="#" class="hover:text-cyan">Status</a></li>
+      </ul>
+    </div>
+    <div>
+      <p class="text-xs font-semibold text-slate-300 uppercase tracking-wider mb-3">Legal</p>
+      <ul class="space-y-2 text-sm text-slate-500">
+        <li><a href="#" class="hover:text-cyan">Terms</a></li>
+        <li><a href="#" class="hover:text-cyan">Privacy</a></li>
+      </ul>
+    </div>
+  </div>
+  <div class="max-w-7xl mx-auto border-t border-line mt-10 pt-6 text-xs text-slate-600 text-center">
+    © VulnEx 2026. All rights reserved.
+  </div>
+</footer>
+<section class="footer-ascii">
+
+<pre>
+
+██╗   ██╗██╗   ██╗██╗     ███╗   ██╗███████╗██╗  ██╗
+██║   ██║██║   ██║██║     ████╗  ██║██╔════╝╚██╗██╔╝
+██║   ██║██║   ██║██║     ██╔██╗ ██║█████╗   ╚███╔╝
+╚██╗ ██╔╝██║   ██║██║     ██║╚██╗██║██╔══╝   ██╔██╗
+ ╚████╔╝ ╚██████╔╝███████╗██║ ╚████║███████╗██╔╝ ██╗
+  ╚═══╝   ╚═════╝ ╚══════╝╚═╝  ╚═══╝╚══════╝╚═╝  ╚═╝
+
+</pre>
+
+</section>
+
+<script>
+  window.addEventListener('scroll', () => {
+    document.getElementById('navbar').classList.toggle('scrolled', window.scrollY > 20);
+  });
+  function toggleMobileNav() {
+    document.getElementById('mobile-nav').classList.toggle('hidden');
+  }
+  function toggleAccordion(btn) {
+    const item = btn.closest('.accordion-item');
+    const wasOpen = item.classList.contains('open');
+    item.parentElement.querySelectorAll('.accordion-item').forEach(i => i.classList.remove('open'));
+    if (!wasOpen) item.classList.add('open');
+  }
+</script>
+
+</body>
+</html>

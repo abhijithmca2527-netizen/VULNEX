@@ -1,0 +1,14 @@
+PHASE-I 
+1.Database Config
+2.User Authentication
+3.Celery and Redis
+
+Terminal Start Up
+1(Terminal)==>python manage.py runserver
+2(Terminal)==>celery -A Vulnex worker --loglevel=info -P solo
+3(Terminal)==>1.wsl
+	      	  2.sudo service redis-server start
+
+PHASE-II
+1.Random Forest 
+2.Isolation Forest	

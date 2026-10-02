@@ -1,0 +1,2673 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Profile & Account — VulnEx</title>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        void: '#030712',
+                        panel: '#0F172A',
+                        panelsoft: '#131C31',
+                        line: '#1E293B',
+
+                        cyan: {
+                            DEFAULT: '#22D3EE'
+                        },
+
+                        violet: {
+                            DEFAULT: '#7C3AED'
+                        },
+
+                        crit: '#F43F5E',
+                        high: '#FB923C',
+                        med: '#FACC15',
+                        low: '#34D399'
+                    },
+
+                    fontFamily: {
+                        display: ['"Space Grotesk"', 'sans-serif'],
+                        body: ['"Inter"', 'sans-serif'],
+                        mono: ['"JetBrains Mono"', 'monospace']
+                    },
+
+                    boxShadow: {
+                        'glow-cyan':
+                            '0 0 0 1px rgba(34,211,238,0.4), 0 0 24px rgba(34,211,238,0.25)',
+
+                        'glow-violet':
+                            '0 0 0 1px rgba(124,58,237,0.4), 0 0 24px rgba(124,58,237,0.25)'
+                    }
+                }
+            }
+        }
+    </script>
+
+    <link rel="preconnect"
+          href="https://fonts.googleapis.com">
+
+    <link
+        href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap"
+        rel="stylesheet">
+
+    <style>
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            background-color: #030712;
+        }
+
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #030712;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #1E293B;
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #22D3EE55;
+        }
+
+        .field-glow:focus {
+            outline: none;
+            border-color: #22D3EE;
+
+            box-shadow:
+                0 0 0 1px rgba(34, 211, 238, 0.5),
+                0 0 18px rgba(34, 211, 238, 0.25);
+        }
+
+        .heat-cell {
+            width: 11px;
+            height: 11px;
+            border-radius: 3px;
+
+            background: #1E293B;
+
+            cursor: pointer;
+
+            transition: transform 0.1s ease;
+        }
+
+        .heat-cell:hover {
+            transform: scale(1.35);
+        }
+
+        .severity-dot {
+            box-shadow: 0 0 8px currentColor;
+        }
+
+    </style>
+
+</head>
+
+
+<body class="font-body text-slate-200 antialiased">
+
+
+<div class="min-h-screen lg:flex">
+
+
+    <!-- =========================
+         MOBILE NAV
+    ========================== -->
+
+    <div
+        class="lg:hidden flex items-center justify-between px-4 py-3 border-b border-line bg-panel/80 backdrop-blur sticky top-0 z-30">
+
+        <a
+            href="{% url 'dashboard' %}"
+            class="flex items-center gap-2">
+
+            <svg
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                class="text-cyan">
+
+                <path
+                    d="M12 2L3 6v6c0 5 3.8 8.7 9 10 5.2-1.3 9-5 9-10V6l-9-4z"
+                    stroke="currentColor"
+                    stroke-width="1.6"/>
+
+                <path
+                    d="M9 12l2 2 4-4"
+                    stroke="currentColor"
+                    stroke-width="1.6"/>
+
+            </svg>
+
+            <span class="font-display font-semibold text-white">
+
+                Vuln<span class="text-cyan">Ex</span>
+
+            </span>
+
+        </a>
+
+
+        <button
+            onclick="document.getElementById('sidebar').classList.toggle('hidden')"
+            class="text-slate-300 p-1.5 rounded-md border border-line">
+
+            ☰
+
+        </button>
+
+    </div>
+
+
+
+    <!-- =========================
+         SIDEBAR
+    ========================== -->
+
+    <aside
+        id="sidebar"
+        class="hidden lg:flex flex-col w-64 shrink-0 bg-panel border-r border-line px-4 py-6">
+
+
+        <a
+            href="{% url 'dashboard' %}"
+            class="flex items-center gap-2 px-2 mb-8">
+
+            <svg
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                fill="none"
+                class="text-cyan">
+
+                <path
+                    d="M12 2L3 6v6c0 5 3.8 8.7 9 10 5.2-1.3 9-5 9-10V6l-9-4z"
+                    stroke="currentColor"
+                    stroke-width="1.6"/>
+
+                <path
+                    d="M9 12l2 2 4-4"
+                    stroke="currentColor"
+                    stroke-width="1.6"/>
+
+            </svg>
+
+            <span
+                class="font-display font-semibold text-lg text-white">
+
+                Vuln<span class="text-cyan">Ex</span>
+
+            </span>
+
+        </a>
+
+
+
+        <nav class="flex-1 space-y-1">
+
+
+            <a
+                href="{% url 'dashboard' %}"
+                class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-400 hover:bg-panelsoft hover:text-white transition">
+
+                🔍
+                Scan
+
+            </a>
+
+
+            <a
+                href="#history-section"
+                class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-400 hover:bg-panelsoft hover:text-white transition">
+
+                🕘
+                History
+
+            </a>
+
+
+            <a
+                href="/reports/"
+                class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-400 hover:bg-panelsoft hover:text-white transition">
+
+                📄
+                Reports
+
+            </a>
+
+
+            <a
+                href="{% url 'profile' %}"
+                class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium bg-panelsoft text-cyan border border-cyan/30">
+
+                ⚙
+                Settings
+
+            </a>
+
+        </nav>
+
+
+
+        <!-- REAL USER -->
+
+        <div class="border-t border-line pt-4 mt-4">
+
+
+            <div
+                class="flex items-center gap-3 px-2">
+
+
+                <div
+                    class="w-8 h-8 rounded-full bg-gradient-to-br from-cyan to-violet flex items-center justify-center text-xs font-semibold text-white">
+
+                    {{ user.full_name|slice:":1"|upper }}
+
+                </div>
+
+
+                <div class="flex-1 min-w-0">
+
+                    <p
+                        class="text-sm font-medium text-slate-200 truncate">
+
+                        {{ user.full_name }}
+
+                    </p>
+
+                    <p
+                        class="text-xs text-slate-500 truncate">
+
+                        {{ user.email }}
+
+                    </p>
+
+                </div>
+
+
+                <a
+                    href="{% url 'logout' %}"
+                    title="Logout"
+                    class="text-slate-500 hover:text-cyan">
+
+                    ↪
+
+                </a>
+
+            </div>
+
+        </div>
+
+    </aside>
+
+
+
+    <!-- =========================
+         MAIN CONTENT
+    ========================== -->
+
+    <main
+        class="flex-1 min-w-0 px-5 py-6 sm:px-8 sm:py-8 max-w-6xl">
+
+
+        <!-- PAGE TITLE -->
+
+        <div class="mb-6">
+
+            <h1
+                class="font-display text-2xl font-semibold text-white">
+
+                Profile &amp; account
+
+            </h1>
+
+            <p
+                class="text-sm text-slate-400 mt-1">
+
+                Manage your account and review your VulnEx scan history.
+
+            </p>
+
+        </div>
+
+
+
+        <!-- =========================
+             DJANGO MESSAGES
+        ========================== -->
+
+        {% if messages %}
+
+        <div class="space-y-3 mb-6">
+
+            {% for message in messages %}
+
+            <div
+                class="
+                    px-4 py-3 rounded-xl border text-sm
+
+                    {% if message.tags == 'success' %}
+                        bg-low/10 border-low/30 text-low
+                    {% else %}
+                        bg-crit/10 border-crit/30 text-crit
+                    {% endif %}
+                ">
+
+                {{ message }}
+
+            </div>
+
+            {% endfor %}
+
+        </div>
+
+        {% endif %}
+
+
+
+        <div
+            class="grid lg:grid-cols-3 gap-6 mb-10">
+
+
+            <!-- =========================
+                 PROFILE
+            ========================== -->
+
+            <div
+                class="lg:col-span-2 space-y-6">
+
+
+                <div
+                    class="bg-panel border border-line rounded-2xl p-6">
+
+
+                    <div
+                        class="flex items-center gap-4 mb-6">
+
+
+                        <div
+                            class="w-14 h-14 rounded-full bg-gradient-to-br from-cyan to-violet flex items-center justify-center text-lg font-semibold text-white">
+
+                            {{ user.full_name|slice:":1"|upper }}
+
+                        </div>
+
+
+                        <div>
+
+                            <h2
+                                class="font-display font-semibold text-white">
+
+                                Personal information
+
+                            </h2>
+
+                            <p
+                                class="text-xs text-slate-500">
+
+                                Update your account information.
+
+                            </p>
+
+                        </div>
+
+                    </div>
+
+
+
+                    <!-- REAL PROFILE FORM -->
+
+                    <form
+                        method="POST"
+                        class="space-y-4">
+
+                        {% csrf_token %}
+
+                        <input
+                            type="hidden"
+                            name="action"
+                            value="update_profile">
+
+
+                        <div>
+
+                            <label
+                                for="profile-name"
+                                class="block text-xs font-medium text-slate-400 mb-1.5">
+
+                                Full name
+
+                            </label>
+
+
+                            <input
+                                id="profile-name"
+                                name="full_name"
+                                type="text"
+                                value="{{ user.full_name }}"
+                                required
+
+                                class="field-glow w-full bg-panelsoft border border-line rounded-lg px-3.5 py-2.5 text-sm text-slate-100">
+
+                        </div>
+
+
+
+                        <div>
+
+                            <label
+                                class="block text-xs font-medium text-slate-400 mb-1.5">
+
+                                Email address
+
+                            </label>
+
+
+                            <div
+                                class="flex items-center justify-between gap-3 bg-panelsoft/60 border border-line rounded-lg px-3.5 py-2.5">
+
+
+                                <span
+                                    class="text-sm text-slate-400 font-mono truncate">
+
+                                    {{ user.email }}
+
+                                </span>
+
+
+                                <span
+                                    class="text-[10px] uppercase tracking-wider text-low bg-low/10 border border-low/30 px-2 py-0.5 rounded-full">
+
+                                    Verified
+
+                                </span>
+
+                            </div>
+
+
+                            <p
+                                class="text-xs text-slate-500 mt-1.5">
+
+                                Email cannot currently be changed from this page.
+
+                            </p>
+
+                        </div>
+
+
+
+                        <button
+                            type="submit"
+
+                            class="bg-cyan text-void font-semibold text-sm rounded-lg px-5 py-2.5 hover:shadow-glow-cyan transition">
+
+                            Save changes
+
+                        </button>
+
+                    </form>
+
+                </div>
+
+
+
+                <!-- =========================
+                     CHANGE PASSWORD
+                ========================== -->
+
+                <div
+                    class="bg-panel border border-line rounded-2xl p-6">
+
+
+                    <h2
+                        class="font-display font-semibold text-white mb-1">
+
+                        Change password
+
+                    </h2>
+
+                    <p
+                        class="text-xs text-slate-500 mb-6">
+
+                        Use at least 8 characters with uppercase letters,
+                        numbers and symbols.
+
+                    </p>
+
+
+
+                    <form
+                        method="POST"
+                        class="space-y-4">
+
+                        {% csrf_token %}
+
+                        <input
+                            type="hidden"
+                            name="action"
+                            value="change_password">
+
+
+                        <!-- Current -->
+
+                        <div>
+
+                            <label
+                                for="current-password"
+                                class="block text-xs font-medium text-slate-400 mb-1.5">
+
+                                Current password
+
+                            </label>
+
+
+                            <input
+                                id="current-password"
+                                name="current_password"
+                                type="password"
+                                required
+                                placeholder="••••••••••"
+
+                                class="field-glow w-full bg-panelsoft border border-line rounded-lg px-3.5 py-2.5 text-sm text-slate-100">
+
+                        </div>
+
+
+
+                        <!-- New -->
+
+                        <div>
+
+                            <label
+                                for="new-password"
+                                class="block text-xs font-medium text-slate-400 mb-1.5">
+
+                                New password
+
+                            </label>
+
+
+                            <input
+                                id="new-password"
+                                name="new_password"
+                                type="password"
+                                required
+                                placeholder="At least 8 characters"
+                                oninput="updateStrength()"
+
+                                class="field-glow w-full bg-panelsoft border border-line rounded-lg px-3.5 py-2.5 text-sm text-slate-100">
+
+
+                            <!-- strength bars -->
+
+                            <div
+                                class="flex gap-1 mt-2">
+
+                                <span
+                                    class="h-1 flex-1 rounded-full bg-line"
+                                    data-bar="1">
+                                </span>
+
+                                <span
+                                    class="h-1 flex-1 rounded-full bg-line"
+                                    data-bar="2">
+                                </span>
+
+                                <span
+                                    class="h-1 flex-1 rounded-full bg-line"
+                                    data-bar="3">
+                                </span>
+
+                                <span
+                                    class="h-1 flex-1 rounded-full bg-line"
+                                    data-bar="4">
+                                </span>
+
+                            </div>
+
+
+                            <p
+                                id="strength-label"
+                                class="text-xs text-slate-500 mt-1.5">
+
+                                Password strength
+
+                            </p>
+
+                        </div>
+
+
+
+                        <!-- Confirm -->
+
+                        <div>
+
+                            <label
+                                for="confirm-password"
+                                class="block text-xs font-medium text-slate-400 mb-1.5">
+
+                                Confirm new password
+
+                            </label>
+
+
+                            <input
+                                id="confirm-password"
+                                name="confirm_password"
+                                type="password"
+                                required
+                                placeholder="Repeat new password"
+
+                                class="field-glow w-full bg-panelsoft border border-line rounded-lg px-3.5 py-2.5 text-sm text-slate-100">
+
+                        </div>
+
+
+
+                        <button
+                            type="submit"
+
+                            class="bg-violet text-white font-semibold text-sm rounded-lg px-5 py-2.5 hover:shadow-glow-violet transition">
+
+                            Update password
+
+                        </button>
+
+                    </form>
+
+                </div>
+
+            </div>
+
+
+
+            <!-- =========================
+                 ACCOUNT SUMMARY
+            ========================== -->
+
+            <div class="space-y-6">
+
+
+                <div
+                    class="bg-panel border border-line rounded-2xl p-6">
+
+
+                    <h2
+                        class="font-display font-semibold text-white mb-4">
+
+                        Account summary
+
+                    </h2>
+
+
+                    <dl
+                        class="space-y-3.5 text-sm">
+
+
+                        <div
+                            class="flex items-center justify-between">
+
+                            <dt
+                                class="text-slate-500">
+
+                                Member since
+
+                            </dt>
+
+                            <dd
+                                class="text-slate-200 font-mono text-xs">
+
+                                {{ user.created_at|date:"M Y"|default:"Registered" }}
+
+                            </dd>
+
+                        </div>
+
+
+
+                        <div
+                            class="flex items-center justify-between">
+
+                            <dt
+                                class="text-slate-500">
+
+                                Account
+
+                            </dt>
+
+                            <dd>
+
+                                <span
+                                    class="text-xs px-2 py-1 rounded-md bg-cyan/10 text-cyan border border-cyan/30">
+
+                                    Active
+
+                                </span>
+
+                            </dd>
+
+                        </div>
+
+
+
+                        <div
+                            class="flex items-center justify-between">
+
+                            <dt
+                                class="text-slate-500">
+
+                                Total scans
+
+                            </dt>
+
+                            <dd
+                                class="text-slate-200 font-mono text-xs">
+
+                                {{ total_scans }}
+
+                            </dd>
+
+                        </div>
+
+
+
+                        <div
+                            class="flex items-center justify-between">
+
+                            <dt
+                                class="text-slate-500">
+
+                                Websites tracked
+
+                            </dt>
+
+                            <dd
+                                class="text-slate-200 font-mono text-xs">
+
+                                {{ unique_websites }}
+
+                            </dd>
+
+                        </div>
+
+                    </dl>
+
+                </div>
+
+
+
+                <!-- SCORE -->
+
+                <div
+                    class="bg-panel border border-line rounded-2xl p-6">
+
+
+                    <h2
+                        class="font-display font-semibold text-white mb-3">
+
+                        Overall security score
+
+                    </h2>
+
+
+                    <div
+                        class="flex items-end gap-2">
+
+
+                        <span
+                            id="overall-score"
+                            class="font-display text-4xl font-semibold">
+
+                            {{ overall_score }}
+
+                        </span>
+
+
+                        <span
+                            class="text-slate-500 text-sm mb-1">
+
+                            / 100
+
+                        </span>
+
+                    </div>
+
+
+                    <p
+                        class="text-xs text-slate-500 mt-2">
+
+                        Average score based on stored vulnerability scans.
+
+                    </p>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+
+        <!-- =========================
+             HISTORY
+        ========================== -->
+
+        <div
+            id="history-section"
+            class="mb-4 grid md:grid-cols-[1fr_360px] items-end gap-4 scroll-mt-24">
+
+            <div>
+
+                <h2
+                    class="font-display text-xl font-semibold text-white">
+
+                    Scan history
+
+                </h2>
+
+                <p
+                    class="text-sm text-slate-400 mt-1">
+
+                    Actual security history from your stored scans.
+
+                </p>
+
+            </div>
+
+
+            <div class="w-full">
+
+                <label
+                    for="site-select"
+                    class="block text-xs text-slate-500 mb-1.5">
+
+                    Website
+
+                </label>
+
+                <select
+                    id="site-select"
+                    onchange="renderAll()"
+                    class="field-glow w-full bg-panelsoft border border-line rounded-lg px-3.5 py-2.5 text-sm font-mono text-slate-200">
+
+                </select>
+
+            </div>
+
+        </div>
+
+
+
+        <!-- =========================
+             GRAPH
+        ========================== -->
+
+        <div
+            class="bg-panel border border-line rounded-2xl p-5 sm:p-6 mb-6">
+
+
+            <div
+                class="flex items-center justify-between mb-4">
+
+
+                <h3
+                    class="text-sm font-semibold text-slate-300">
+
+                    Security score trend
+
+                </h3>
+
+
+                <span
+                    class="flex items-center gap-1.5 text-xs text-slate-500">
+
+                    <span
+                        class="w-2 h-2 rounded-full bg-cyan severity-dot">
+
+                    </span>
+
+                    Score
+
+                </span>
+
+            </div>
+
+
+            <canvas
+                id="trend-canvas"
+                class="w-full"
+                height="220">
+
+            </canvas>
+
+        </div>
+
+
+
+        <!-- =========================
+             CALENDAR
+        ========================== -->
+
+        <div
+            class="bg-panel border border-line rounded-2xl p-5 sm:p-6 mb-6 overflow-x-auto">
+
+
+            <div
+                class="flex items-center justify-between mb-4 min-w-[640px]">
+
+
+                <h3
+                    class="text-sm font-semibold text-slate-300">
+
+                    Daily scan calendar
+
+                </h3>
+
+
+
+                <div
+                    class="flex items-center gap-2 text-xs text-slate-500">
+
+                    <span>Riskier</span>
+
+                    <span
+                        class="w-2.5 h-2.5 rounded-sm"
+                        style="background:#F43F5E">
+                    </span>
+
+                    <span
+                        class="w-2.5 h-2.5 rounded-sm"
+                        style="background:#FB923C">
+                    </span>
+
+                    <span
+                        class="w-2.5 h-2.5 rounded-sm"
+                        style="background:#FACC15">
+                    </span>
+
+                    <span
+                        class="w-2.5 h-2.5 rounded-sm"
+                        style="background:#22D3EE">
+                    </span>
+
+                    <span
+                        class="w-2.5 h-2.5 rounded-sm"
+                        style="background:#34D399">
+                    </span>
+
+                    <span>Safer</span>
+
+                </div>
+
+            </div>
+
+
+
+            <div
+                id="heatmap-months"
+                class="flex gap-[3px] text-[10px] text-slate-500 mb-1 min-w-[640px] pl-6">
+            </div>
+
+
+            <div
+                class="flex gap-[3px] min-w-[640px]">
+
+
+                <div
+                    class="flex flex-col gap-[3px] text-[10px] text-slate-500 pr-1 justify-between pt-[2px]">
+
+                    <span>Mon</span>
+                    <span></span>
+                    <span>Wed</span>
+                    <span></span>
+                    <span>Fri</span>
+                    <span></span>
+                    <span></span>
+
+                </div>
+
+
+                <div
+                    id="heatmap-grid"
+                    class="flex gap-[3px]">
+                </div>
+
+            </div>
+
+        </div>
+
+
+
+        <!-- =========================
+             RECENT SCANS
+        ========================== -->
+
+        <div
+            class="bg-panel border border-line rounded-xl overflow-hidden mb-10">
+
+
+            <div
+                class="overflow-x-auto">
+
+
+                <table
+                    class="w-full text-sm min-w-[700px]">
+
+
+                    <thead>
+
+                    <tr
+                        class="text-left text-xs text-slate-500 uppercase tracking-wider border-b border-line">
+
+                        <th class="px-4 py-3">
+                            Date
+                        </th>
+
+                        <th class="px-4 py-3">
+                            Security Score
+                        </th>
+
+                        <th class="px-4 py-3">
+                            Findings
+                        </th>
+
+                        <th class="px-4 py-3">
+                            Risk
+                        </th>
+
+                        <th class="px-4 py-3">
+                            Report
+                        </th>
+
+                    </tr>
+
+                    </thead>
+
+
+                    <tbody
+                        id="history-table-body"
+                        class="divide-y divide-line">
+                    </tbody>
+
+                </table>
+
+            </div>
+
+        </div>
+
+
+    </main>
+
+</div>
+
+
+
+<!-- =============================
+     DJANGO DATA FOR JAVASCRIPT
+============================== -->
+
+{{ history_data|json_script:"scan-history-data" }}
+
+
+
+<script>
+
+
+/* =============================
+   PASSWORD STRENGTH
+============================== */
+
+function passwordScore(password) {
+
+    let score = 0;
+
+    if (password.length >= 8)
+        score++;
+
+    if (
+        /[A-Z]/.test(password) &&
+        /[a-z]/.test(password)
+    )
+        score++;
+
+    if (/\d/.test(password))
+        score++;
+
+    if (/[^A-Za-z0-9]/.test(password))
+        score++;
+
+    return score;
+}
+
+
+
+function updateStrength() {
+
+    const password =
+        document.getElementById(
+            'new-password'
+        ).value;
+
+
+    const score =
+        password.length
+            ? passwordScore(password)
+            : 0;
+
+
+    const bars =
+        document.querySelectorAll(
+            '[data-bar]'
+        );
+
+
+    const colors = [
+        'bg-crit',
+        'bg-high',
+        'bg-med',
+        'bg-low'
+    ];
+
+
+    const labels = [
+        'Password strength',
+        'Weak',
+        'Fair',
+        'Good',
+        'Strong'
+    ];
+
+
+    bars.forEach(
+        (bar, index) => {
+
+            bar.className =
+                'h-1 flex-1 rounded-full ' +
+
+                (
+                    index < score
+
+                        ? colors[
+                            Math.min(
+                                score,
+                                4
+                            ) - 1
+                        ]
+
+                        : 'bg-line'
+                );
+
+        }
+    );
+
+
+    document.getElementById(
+        'strength-label'
+    ).textContent =
+        labels[score];
+}
+
+
+
+/* =============================
+   REAL SCAN DATA
+============================== */
+
+const realHistory =
+    JSON.parse(
+        document.getElementById(
+            'scan-history-data'
+        ).textContent
+    );
+
+
+const DAYS = 182;
+
+
+
+/* =============================
+   WEBSITE SELECT
+============================== */
+
+function populateWebsiteSelector() {
+
+    const select =
+        document.getElementById(
+            'site-select'
+        );
+
+    if (!select)
+        return;
+
+    select.innerHTML = '';
+
+    const websites =
+        Object.keys(realHistory);
+
+    if (!websites.length) {
+
+        const option =
+            document.createElement(
+                'option'
+            );
+
+        option.value = '';
+
+        option.textContent =
+            'No websites scanned';
+
+        select.appendChild(
+            option
+        );
+
+        return;
+    }
+
+    /*
+     * Newest scanned website first.
+     * This works regardless of whether
+     * Django sent each site's scans
+     * ascending or descending.
+     */
+    websites.sort(
+        (a, b) => {
+
+            const newestTime =
+                site => {
+
+                    const scans =
+                        realHistory[site] || [];
+
+                    if (!scans.length)
+                        return 0;
+
+                    return Math.max(
+                        ...scans.map(
+                            scan => {
+
+                                const value =
+                                    scan.datetime ||
+                                    (
+                                        scan.date
+                                        ? scan.date + 'T00:00:00'
+                                        : ''
+                                    );
+
+                                const time =
+                                    new Date(
+                                        value
+                                    ).getTime();
+
+                                return Number.isNaN(time)
+                                    ? 0
+                                    : time;
+                            }
+                        )
+                    );
+                };
+
+            return (
+                newestTime(b) -
+                newestTime(a)
+            );
+        }
+    );
+
+    websites.forEach(
+        site => {
+
+            const option =
+                document.createElement(
+                    'option'
+                );
+
+            option.value = site;
+
+            option.textContent = site;
+
+            select.appendChild(
+                option
+            );
+        }
+    );
+}
+
+
+
+/* =============================
+   6-MONTH HISTORY
+============================== */
+/* =============================
+   ALL INDIVIDUAL SCANS
+============================== */
+
+function getSiteScans(site) {
+
+    const scans =
+        realHistory[site] || [];
+
+
+    return scans
+
+        .map(scan => {
+
+            let scanDate;
+
+
+            if (scan.datetime) {
+
+                scanDate =
+                    new Date(
+                        scan.datetime
+                    );
+
+            } else {
+
+                scanDate =
+                    new Date(
+                        scan.date +
+                        'T00:00:00'
+                    );
+            }
+
+
+            return {
+
+                date:
+                    scanDate,
+
+                dateKey:
+                    scan.date,
+
+                score:
+                    Number(
+                        scan.score || 0
+                    ),
+
+                findings:
+                    Number(
+                        scan.findings || 0
+                    ),
+
+                risk:
+                    scan.risk ||
+                    'Unknown',
+
+                confidence:
+                    Number(
+                        scan.confidence || 0
+                    ),
+
+                taskId:
+                    scan.task_id ||
+                    scan.scan_id,
+
+                scanId:
+                    scan.scan_id,
+
+                hasScan:
+                    true
+            };
+
+        })
+
+        .sort(
+            (a, b) =>
+                a.date - b.date
+        );
+}
+
+
+/* =============================
+   6-MONTH CALENDAR
+
+   Heatmap shows only the latest
+   scan of each day.
+
+   Graph still shows EVERY scan.
+============================== */
+
+function generateCalendarHistory(site) {
+
+    const scans =
+        getSiteScans(site);
+
+
+    const latestScanByDay = {};
+
+
+    scans.forEach(scan => {
+
+        latestScanByDay[
+            scan.dateKey
+        ] = scan;
+
+    });
+
+
+    const data = [];
+
+    const today =
+        new Date();
+
+
+    for (
+        let i = DAYS - 1;
+        i >= 0;
+        i--
+    ) {
+
+        const date =
+            new Date(today);
+
+
+        date.setDate(
+            today.getDate() - i
+        );
+
+
+        const year =
+            date.getFullYear();
+
+
+        const month =
+            String(
+                date.getMonth() + 1
+            ).padStart(
+                2,
+                '0'
+            );
+
+
+        const day =
+            String(
+                date.getDate()
+            ).padStart(
+                2,
+                '0'
+            );
+
+
+        const key =
+            `${year}-${month}-${day}`;
+
+
+        const scan =
+            latestScanByDay[key];
+
+
+        if (scan) {
+
+            data.push({
+
+                date:
+                    date,
+
+                score:
+                    scan.score,
+
+                findings:
+                    scan.findings,
+
+                risk:
+                    scan.risk,
+
+                confidence:
+                    scan.confidence,
+
+                taskId:
+                    scan.taskId,
+
+                scanId:
+                    scan.scanId,
+
+                hasScan:
+                    true
+            });
+
+        } else {
+
+            data.push({
+
+                date:
+                    date,
+
+                score:
+                    null,
+
+                findings:
+                    0,
+
+                risk:
+                    null,
+
+                confidence:
+                    0,
+
+                taskId:
+                    '',
+
+                scanId:
+                    null,
+
+                hasScan:
+                    false
+            });
+        }
+    }
+
+
+    return data;
+}
+
+/* =============================
+   SCORE HELPERS
+============================== */
+
+function scoreColor(score) {
+
+    if (
+        score === null ||
+        score === undefined
+    )
+        return '#1E293B';
+
+
+    if (score < 60)
+        return '#F43F5E';
+
+
+    if (score < 75)
+        return '#FB923C';
+
+
+    if (score < 85)
+        return '#FACC15';
+
+
+    if (score < 95)
+        return '#22D3EE';
+
+
+    return '#34D399';
+}
+
+
+
+function scoreLabel(score) {
+
+    if (score === null)
+        return 'No scan';
+
+
+    if (score < 60)
+        return 'At risk';
+
+
+    if (score < 75)
+        return 'Needs attention';
+
+
+    if (score < 85)
+        return 'Fair';
+
+
+    if (score < 95)
+        return 'Good';
+
+
+    return 'Excellent';
+}
+
+
+
+function updateOverallScoreColor() {
+
+    const element =
+        document.getElementById(
+            'overall-score'
+        );
+
+
+    if (!element)
+        return;
+
+
+    const score =
+        Number(
+            element.textContent.trim()
+        );
+
+
+    element.style.color =
+        scoreColor(score);
+}
+
+
+
+/* =============================
+   MONTHS
+============================== */
+
+const monthNames = [
+
+    'Jan',
+    'Feb',
+    'Mar',
+    'Apr',
+    'May',
+    'Jun',
+    'Jul',
+    'Aug',
+    'Sep',
+    'Oct',
+    'Nov',
+    'Dec'
+
+];
+
+
+
+/* =============================
+   CALENDAR
+============================== */
+
+function renderHeatmap(data) {
+
+    const grid =
+        document.getElementById(
+            'heatmap-grid'
+        );
+
+
+    const monthsRow =
+        document.getElementById(
+            'heatmap-months'
+        );
+
+
+    grid.innerHTML = '';
+
+    monthsRow.innerHTML = '';
+
+
+    if (!data.length)
+        return;
+
+
+    const first =
+        data[0].date;
+
+
+    const firstDay =
+        (
+            first.getDay() + 6
+        ) % 7;
+
+
+    const padded =
+        Array(firstDay)
+            .fill(null)
+            .concat(data);
+
+
+    const weeks = [];
+
+
+    for (
+        let i = 0;
+        i < padded.length;
+        i += 7
+    ) {
+
+        weeks.push(
+            padded.slice(
+                i,
+                i + 7
+            )
+        );
+
+    }
+
+
+    let previousMonth = null;
+
+
+    weeks.forEach(
+        week => {
+
+            const column =
+                document.createElement(
+                    'div'
+                );
+
+
+            column.className =
+                'flex flex-col gap-[3px]';
+
+
+            const realDay =
+                week.find(
+                    day => day
+                );
+
+
+            let label = '';
+
+
+            if (
+                realDay &&
+                realDay.date.getMonth()
+                    !== previousMonth
+            ) {
+
+                label =
+                    monthNames[
+                        realDay.date.getMonth()
+                    ];
+
+
+                previousMonth =
+                    realDay.date.getMonth();
+
+            }
+
+
+            const monthLabel =
+                document.createElement(
+                    'span'
+                );
+
+
+            monthLabel.style.width =
+                '11px';
+
+
+            monthLabel.textContent =
+                label;
+
+
+            monthsRow.appendChild(
+                monthLabel
+            );
+
+
+            week.forEach(
+                day => {
+
+                    const cell =
+                        document.createElement(
+                            'div'
+                        );
+
+
+                    if (!day) {
+
+                        cell.className =
+                            'heat-cell opacity-0 pointer-events-none';
+
+                    }
+
+                    else {
+
+                        cell.className =
+                            'heat-cell';
+
+
+                        cell.style.background =
+                            scoreColor(
+                                day.score
+                            );
+
+
+                        const dateText =
+                            day.date.toLocaleDateString(
+                                undefined,
+                                {
+                                    month: 'short',
+                                    day: 'numeric',
+                                    year: 'numeric'
+                                }
+                            );
+
+
+                        if (day.hasScan) {
+
+                            cell.title =
+                                `${dateText}
+Score: ${day.score}/100
+Findings: ${day.findings}
+Risk: ${day.risk}`;
+
+                        }
+
+                        else {
+
+                            cell.title =
+                                `${dateText} — No scan`;
+
+                        }
+
+                    }
+
+
+                    column.appendChild(
+                        cell
+                    );
+
+                }
+            );
+
+
+            grid.appendChild(
+                column
+            );
+
+        }
+    );
+}
+
+
+
+/* =============================
+   RISK BADGES
+============================== */
+
+function riskBadge(risk) {
+
+    const value =
+        String(
+            risk || 'Unknown'
+        ).toLowerCase();
+
+
+    if (value === 'critical')
+
+        return `
+            <span class="text-xs px-2 py-1 rounded-md bg-crit/10 text-crit border border-crit/30">
+                Critical
+            </span>
+        `;
+
+
+    if (value === 'high')
+
+        return `
+            <span class="text-xs px-2 py-1 rounded-md bg-high/10 text-high border border-high/30">
+                High
+            </span>
+        `;
+
+
+    if (value === 'medium')
+
+        return `
+            <span class="text-xs px-2 py-1 rounded-md bg-med/10 text-med border border-med/30">
+                Medium
+            </span>
+        `;
+
+
+    if (value === 'low')
+
+        return `
+            <span class="text-xs px-2 py-1 rounded-md bg-low/10 text-low border border-low/30">
+                Low
+            </span>
+        `;
+
+
+    return `
+        <span class="text-xs px-2 py-1 rounded-md bg-slate-500/10 text-slate-400 border border-slate-500/30">
+            Unknown
+        </span>
+    `;
+}
+
+
+
+/* =============================
+   TREND GRAPH
+   EVERY SCAN = ONE POINT
+============================== */
+
+function renderTrendChart(points) {
+
+    const canvas =
+        document.getElementById(
+            'trend-canvas'
+        );
+
+
+    const dpr =
+        window.devicePixelRatio || 1;
+
+
+    const width =
+        canvas.parentElement
+            .clientWidth - 4;
+
+
+    const height = 240;
+
+
+    canvas.width =
+        width * dpr;
+
+
+    canvas.height =
+        height * dpr;
+
+
+    canvas.style.width =
+        width + 'px';
+
+
+    canvas.style.height =
+        height + 'px';
+
+
+    const ctx =
+        canvas.getContext(
+            '2d'
+        );
+
+
+    ctx.setTransform(
+        1,
+        0,
+        0,
+        1,
+        0,
+        0
+    );
+
+
+    ctx.scale(
+        dpr,
+        dpr
+    );
+
+
+    ctx.clearRect(
+        0,
+        0,
+        width,
+        height
+    );
+
+
+    /*
+     * Maximum latest 45 scans
+     */
+    points =
+        points.slice(-45);
+
+
+    if (!points.length) {
+
+        ctx.fillStyle =
+            '#64748B';
+
+
+        ctx.font =
+            '12px Inter';
+
+
+        ctx.textAlign =
+            'center';
+
+
+        ctx.fillText(
+            'No scan history for this website',
+            width / 2,
+            height / 2
+        );
+
+
+        return;
+    }
+
+
+    const padL = 40;
+
+    const padR = 20;
+
+    const padT = 25;
+
+    const padB = 50;
+
+
+    const graphWidth =
+        width -
+        padL -
+        padR;
+
+
+    const graphHeight =
+        height -
+        padT -
+        padB;
+
+
+    /* =========================
+       GRID
+    ========================= */
+
+    ctx.strokeStyle =
+        '#1E293B';
+
+
+    ctx.fillStyle =
+        '#64748B';
+
+
+    ctx.font =
+        '10px Inter';
+
+
+    ctx.textAlign =
+        'right';
+
+
+    [
+        0,
+        25,
+        50,
+        75,
+        100
+
+    ].forEach(value => {
+
+        const y =
+            padT +
+            graphHeight -
+            (
+                value / 100
+            ) * graphHeight;
+
+
+        ctx.beginPath();
+
+
+        ctx.moveTo(
+            padL,
+            y
+        );
+
+
+        ctx.lineTo(
+            padL +
+            graphWidth,
+            y
+        );
+
+
+        ctx.stroke();
+
+
+        ctx.fillText(
+            value,
+            padL - 7,
+            y + 3
+        );
+
+    });
+
+
+    /* =========================
+       POINT POSITIONS
+    ========================= */
+
+    const positions = [];
+
+
+    if (
+        points.length === 1
+    ) {
+
+        positions.push({
+
+            x:
+                padL +
+                graphWidth / 2,
+
+            y:
+                padT +
+                graphHeight -
+                (
+                    points[0].score
+                    / 100
+                ) * graphHeight
+        });
+
+    } else {
+
+        const stepX =
+            graphWidth /
+            (
+                points.length - 1
+            );
+
+
+        points.forEach(
+            (point, index) => {
+
+                positions.push({
+
+                    x:
+                        padL +
+                        index * stepX,
+
+                    y:
+                        padT +
+                        graphHeight -
+                        (
+                            point.score
+                            / 100
+                        ) * graphHeight
+                });
+
+            }
+        );
+    }
+
+
+    /* =========================
+       TREND LINE
+    ========================= */
+
+    if (
+        points.length > 1
+    ) {
+
+        ctx.beginPath();
+
+
+        positions.forEach(
+            (position, index) => {
+
+                if (
+                    index === 0
+                ) {
+
+                    ctx.moveTo(
+                        position.x,
+                        position.y
+                    );
+
+                } else {
+
+                    ctx.lineTo(
+                        position.x,
+                        position.y
+                    );
+                }
+            }
+        );
+
+
+        const gradient =
+            ctx.createLinearGradient(
+                0,
+                0,
+                width,
+                0
+            );
+
+
+        gradient.addColorStop(
+            0,
+            '#22D3EE'
+        );
+
+
+        gradient.addColorStop(
+            1,
+            '#7C3AED'
+        );
+
+
+        ctx.strokeStyle =
+            gradient;
+
+
+        ctx.lineWidth = 2;
+
+
+        ctx.stroke();
+    }
+
+
+    /* =========================
+       POINTS
+    ========================= */
+
+    positions.forEach(
+        (position, index) => {
+
+            const point =
+                points[index];
+
+
+            ctx.beginPath();
+
+
+            ctx.arc(
+                position.x,
+                position.y,
+                5,
+                0,
+                Math.PI * 2
+            );
+
+
+            ctx.fillStyle =
+                scoreColor(
+                    point.score
+                );
+
+
+            ctx.fill();
+
+
+            /*
+             * Score above point
+             */
+            ctx.fillStyle =
+                '#CBD5E1';
+
+
+            ctx.font =
+                '10px Inter';
+
+
+            ctx.textAlign =
+                'center';
+
+
+            ctx.fillText(
+                point.score,
+                position.x,
+                position.y - 11
+            );
+
+        }
+    );
+
+
+    /* =========================
+       DATE + TIME
+    ========================= */
+
+    ctx.fillStyle =
+        '#64748B';
+
+
+    ctx.font =
+        '9px Inter';
+
+
+    ctx.textAlign =
+        'center';
+
+
+    const labelEvery =
+        points.length <= 6
+
+            ? 1
+
+            : Math.ceil(
+                points.length / 6
+            );
+
+
+    points.forEach(
+        (point, index) => {
+
+            if (
+                index % labelEvery !== 0
+                &&
+                index !==
+                points.length - 1
+            ) {
+
+                return;
+            }
+
+
+            const position =
+                positions[index];
+
+
+            const dateText =
+                point.date
+                    .toLocaleDateString(
+                        undefined,
+                        {
+                            day:
+                                '2-digit',
+
+                            month:
+                                'short'
+                        }
+                    );
+
+
+            const timeText =
+                point.date
+                    .toLocaleTimeString(
+                        undefined,
+                        {
+                            hour:
+                                '2-digit',
+
+                            minute:
+                                '2-digit'
+                        }
+                    );
+
+
+            ctx.fillText(
+                dateText,
+                position.x,
+                height - 25
+            );
+
+
+            ctx.fillText(
+                timeText,
+                position.x,
+                height - 11
+            );
+
+        }
+    );
+}
+
+
+/* =============================
+   RECENT INDIVIDUAL SCANS
+============================== */
+
+function renderTable(scans) {
+
+    const body =
+        document.getElementById(
+            'history-table-body'
+        );
+
+
+    const recent =
+        scans
+            .slice(-8)
+            .reverse();
+
+
+    if (!recent.length) {
+
+        body.innerHTML = `
+
+            <tr>
+
+                <td
+                    colspan="5"
+                    class="px-4 py-8 text-center text-slate-500">
+
+                    No scans available.
+
+                </td>
+
+            </tr>
+        `;
+
+
+        return;
+    }
+
+
+    body.innerHTML =
+        recent.map(
+            scan => {
+
+                const color =
+                    scoreColor(
+                        scan.score
+                    );
+
+
+                const label =
+                    scoreLabel(
+                        scan.score
+                    );
+
+
+                let reportButton;
+
+
+                if (scan.taskId) {
+
+                    reportButton = `
+
+                        <a
+                            href="/report/${scan.taskId}/"
+
+                            class="text-xs px-2 py-1 rounded-md bg-cyan/10 text-cyan border border-cyan/30 hover:bg-cyan/20">
+
+                            View Report
+
+                        </a>
+                    `;
+
+                } else {
+
+                    reportButton = `
+
+                        <span
+                            class="text-xs text-slate-500">
+
+                            Report unavailable
+
+                        </span>
+                    `;
+                }
+
+
+                const dateText =
+                    scan.date
+                        .toLocaleDateString(
+                            undefined,
+                            {
+                                day:
+                                    '2-digit',
+
+                                month:
+                                    'short',
+
+                                year:
+                                    'numeric'
+                            }
+                        );
+
+
+                const timeText =
+                    scan.date
+                        .toLocaleTimeString(
+                            undefined,
+                            {
+                                hour:
+                                    '2-digit',
+
+                                minute:
+                                    '2-digit'
+                            }
+                        );
+
+
+                return `
+
+                    <tr
+                        class="hover:bg-panelsoft/60 transition">
+
+
+                        <td
+                            class="px-4 py-3.5 text-slate-500 font-mono text-xs">
+
+                            ${dateText}
+
+                            <div
+                                class="text-[10px] text-slate-600 mt-1">
+
+                                ${timeText}
+
+                            </div>
+
+                        </td>
+
+
+                        <td
+                            class="px-4 py-3.5">
+
+                            <span
+                                style="color:${color}"
+                                class="text-xs font-medium">
+
+                                ${scan.score}/100 · ${label}
+
+                            </span>
+
+                        </td>
+
+
+                        <td
+                            class="px-4 py-3.5 text-slate-400">
+
+                            ${scan.findings} open
+
+                        </td>
+
+
+                        <td
+                            class="px-4 py-3.5">
+
+                            ${
+                                riskBadge(
+                                    scan.risk
+                                )
+                            }
+
+                        </td>
+
+
+                        <td
+                            class="px-4 py-3.5">
+
+                            ${reportButton}
+
+                        </td>
+
+
+                    </tr>
+                `;
+
+            }
+
+        ).join('');
+}
+
+
+/* =============================
+   RENDER EVERYTHING
+============================== */
+function renderAll() {
+
+    const site =
+        document.getElementById(
+            'site-select'
+        ).value;
+
+    if (!site) {
+        renderHeatmap([]);
+        renderTrendChart([]);
+        renderTable([]);
+        return;
+    }
+
+    const scans =
+        getSiteScans(site);
+
+    const calendarData =
+        generateCalendarHistory(site);
+
+    renderHeatmap(calendarData);
+    renderTrendChart(scans);
+    renderTable(scans);
+}
+
+
+/* =========================================
+   INITIALIZE SCAN HISTORY
+========================================= */
+
+document.addEventListener(
+    'DOMContentLoaded',
+    function () {
+
+        populateWebsiteSelector();
+
+        renderAll();
+
+        updateOverallScoreColor();
+    }
+);
+
+
+/* =========================================
+   REDRAW GRAPH WHEN WINDOW RESIZES
+========================================= */
+
+window.addEventListener(
+    'resize',
+    function () {
+
+        const select =
+            document.getElementById(
+                'site-select'
+            );
+
+        if (!select || !select.value) {
+            return;
+        }
+
+        renderTrendChart(
+            getSiteScans(
+                select.value
+            )
+        );
+    }
+);
+
+</script>
+
+</script>
+
+
+</body>
+</html>
