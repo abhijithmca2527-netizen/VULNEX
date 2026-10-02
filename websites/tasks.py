@@ -6,18 +6,29 @@ from django.conf import settings
 from celery import shared_task
 from .models import ScanResult
 from .feature_extractor import VulnexFeatureExtractor
+from users.models import User
 
 # Dynamically build the absolute path to your root model file
 MODEL_PATH = os.path.join(settings.BASE_DIR, 'vulnex_model.pkl')
 
 # Load the trained ML model
 rf_model = joblib.load(MODEL_PATH)
+def get_risk_from_score(score):
+    if score >= 100:
+        return "Clean"
+    elif score >= 70:
+        return "Low"
+    elif score >= 40:
+        return "Medium"
+    else:
+        return "High"
 
 @shared_task
-def run_vulnex_scan(target_url, website_id=1):
+def run_vulnex_scan(target_url, website_id=1, user_id=None):
     print(f"[VULNEX] Scanning: {target_url}")
     extractor = VulnexFeatureExtractor()
     
+    user = User.objects.filter(pk=user_id).first() if user_id else None
     # Extract features and raw headers
     extraction_result = extractor.extract_features(target_url)
     binary_vector = extraction_result['feature_vector']
@@ -32,18 +43,18 @@ def run_vulnex_scan(target_url, website_id=1):
         probs = rf_model.predict_proba([binary_vector])[0]
         confidence = float(max(probs) * 100)
         
-        risk_labels = {0: 'Low', 1: 'Medium', 2: 'High', 3: 'Critical'}
-        rf_risk = risk_labels.get(prediction, 'Low')
+        
         VECTOR_WEIGHTS = [20, 15, 5, 25, 5, 5, 15, 10, 5, 5, 10, 5]
         total_deduction = sum(bit * weight for bit, weight in zip(binary_vector, VECTOR_WEIGHTS))
         security_score = max(0, 100 - total_deduction)
-        
+        rf_risk = get_risk_from_score(security_score)
         print(f"[✅ KNOWN THREATS DETECTED] RF Risk: {rf_risk} | Score: {security_score}/100")
 
         ScanResult.objects.create(
             security_score=int(security_score),
             risk_level=rf_risk,
-            website_id=website_id
+            website_id=website_id,
+            user=user
         )
 
         return {
@@ -143,7 +154,8 @@ def run_vulnex_scan(target_url, website_id=1):
     ScanResult.objects.create(
         security_score=int(novel_score),
         risk_level=final_risk[:100],
-        website_id=website_id
+        website_id=website_id,
+        user=user
     )
 
     return {

@@ -1,4 +1,5 @@
 from django.db import models
+from users.models import User
 
 class Website(models.Model):
     website_id = models.BigAutoField(primary_key=True)
@@ -21,6 +22,20 @@ class ScanResult(models.Model):
     security_score = models.IntegerField(null=True, blank=True)
     risk_level = models.CharField(max_length=100, null=True, blank=True)
     website_id = models.IntegerField()
+
+    user = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        db_column="user_id",
+        related_name="performed_scans"
+    )
+    @property
+    def website(self):
+        return Website.objects.filter(
+            website_id=self.website_id
+        ).first()
 
     class Meta:
         db_table = 'SCANS'
@@ -45,3 +60,19 @@ class SandboxThreat(models.Model):
 
     def __str__(self):
         return f"🚨 ANOMALY - {self.target_url} ({self.created_at})"
+
+class Vulnerability(models.Model):
+    vulnerability_id = models.BigAutoField(primary_key=True)
+    vulnerability_name = models.CharField(max_length=255)
+    description = models.TextField()
+    scan = models.ForeignKey(
+        ScanResult,
+        on_delete=models.DO_NOTHING,
+        db_column="scan_id",
+        related_name="vulnerabilities",
+    )
+    issue = models.TextField(null=True, blank=True)
+
+    class Meta:
+        db_table = 'VULNERABILITIES'
+        managed = False

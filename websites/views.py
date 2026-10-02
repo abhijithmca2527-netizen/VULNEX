@@ -20,8 +20,9 @@ def start_scan_view(request):
             domain = parsed_url.netloc or parsed_url.path
 
             # Assign a fallback user_id of 1 if not authenticated
-            current_user_id = request.user.id if request.user.is_authenticated else 1
-
+            current_user_id = request.session.get("user_id")
+            if not current_user_id:
+                return redirect("login")
             # Query using the exact field names from the updated model
             website, created = Website.objects.get_or_create(
                 website_url=target_url,
@@ -32,7 +33,7 @@ def start_scan_view(request):
             )
 
             # Pass the dynamic database ID (website_id) to the Celery task
-            task = run_vulnex_scan.delay(target_url, website_id=website.website_id)
+            task = run_vulnex_scan.delay(target_url, website_id=website.website_id,user_id=current_user_id)
             
             return render(request, 'websites/loading.html', {
                 'task_id': task.id, 
@@ -87,20 +88,20 @@ def scan_report(request, task_id):
             return render(request, 'websites/report.html', context)
 
         # Handle Tier 1 (Random Forest) Scans
-       # Handle Tier 1 (Random Forest) Scans
-        risk_raw = scan_data.get('risk_category')
-        if risk_raw is None:
-            ai_pred = scan_data.get('ai_prediction', {})
-            risk_raw = ai_pred.get('risk_level', 'Low')
-
-        if isinstance(risk_raw, int):
-            int_to_str = {0: 'LOW RISK', 1: 'MEDIUM RISK', 2: 'HIGH RISK', 3: 'CRITICAL RISK'}
-            risk_label_str = int_to_str.get(risk_raw, 'LOW RISK')
-        else:
-            risk_label_str = f"{str(risk_raw).upper()} RISK"
 
         # USE DYNAMIC SCORE FROM CELERY TASK
         actual_score = scan_data.get('score', 100)
+
+        # Risk level is determined ONLY from the final security score.
+        # This keeps the report consistent with the stored scan score.
+        if actual_score >= 100:
+            risk_label_str = 'CLEAN'
+        elif actual_score >= 70:
+            risk_label_str = 'LOW RISK'
+        elif actual_score >= 40:
+            risk_label_str = 'MEDIUM RISK'
+        else:
+            risk_label_str = 'HIGH RISK'
 
         # Dynamic color styling based on the actual score
         if actual_score >= 80:

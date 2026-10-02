@@ -8,6 +8,7 @@ class User(models.Model):
     password = models.CharField(max_length=255)
     otp_verified = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
+    role = models.CharField(max_length=20,default="user")
 
     class Meta:
         db_table = 'USERS'  # Forces Django to use the cloud table name
