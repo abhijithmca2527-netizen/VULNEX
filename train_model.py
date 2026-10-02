@@ -15,11 +15,11 @@ X = df.drop(columns=['simulated_cvss', 'risk_category'])
 y = df['risk_category']
 
 # 3. Split the data (80% for training, 20% for testing)
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=1)
 
 # 4. Train the Random Forest Model
 print("[VULNEX AI] Training the Machine Learning model...")
-model = RandomForestClassifier(n_estimators=100, max_depth=6, random_state=42)
+model = RandomForestClassifier(n_estimators=100, random_state=42)
 model.fit(X_train, y_train)
 
 # 5. Evaluate the Model's accuracy

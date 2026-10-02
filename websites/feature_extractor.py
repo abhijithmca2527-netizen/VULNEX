@@ -60,7 +60,9 @@ class VulnexFeatureExtractor:
         # 2. Web Response & Header Analysis
         # -------------------------------------------------------------
         try:
-            response = requests.get(
+            # Using a Session ensures cookies and headers persist across redirect hops
+            session = requests.Session()
+            response = session.get(
                 target_url,
                 headers=self.headers,
                 timeout=self.timeout,
@@ -71,12 +73,11 @@ class VulnexFeatureExtractor:
             headers = {k.lower(): v for k, v in response.headers.items()}
             body_text = response.text.lower()
 
-            # Feature 1: Missing HSTS
+            # Feature 1: Missing HSTS (Strict-Transport-Security)
             if 'strict-transport-security' not in headers:
                 missing_hsts = 1
 
             # Feature 2: Missing X-Frame-Options (Clickjacking)
-            # FIX: Check for legacy X-Frame OR modern CSP frame-ancestors
             has_x_frame = 'x-frame-options' in headers
             has_csp_frame = 'content-security-policy' in headers and 'frame-ancestors' in headers['content-security-policy']
             if not (has_x_frame or has_csp_frame):
@@ -87,8 +88,14 @@ class VulnexFeatureExtractor:
                 missing_x_content_type = 1
 
             # Feature 4: Missing Content-Security-Policy
-            if 'content-security-policy' not in headers:
+            # Catch Google's Report-Only policy which Observatory penalizes
+            has_enforced_csp = 'content-security-policy' in headers
+            has_report_only = 'content-security-policy-report-only' in headers
+            
+            if not has_enforced_csp:
                 missing_csp = 1
+                if has_report_only:
+                    print("[VULNEX EXTRACTOR] Found CSP-Report-Only. Flagging as unenforced.")
 
             # Feature 5: Exposed Server Banner
             # FIX: Only flag if the server exposes a version number (e.g., contains digits and a slash)

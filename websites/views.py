@@ -87,24 +87,30 @@ def scan_report(request, task_id):
             return render(request, 'websites/report.html', context)
 
         # Handle Tier 1 (Random Forest) Scans
+       # Handle Tier 1 (Random Forest) Scans
         risk_raw = scan_data.get('risk_category')
         if risk_raw is None:
             ai_pred = scan_data.get('ai_prediction', {})
             risk_raw = ai_pred.get('risk_level', 'Low')
 
         if isinstance(risk_raw, int):
-            int_to_str = {0: 'LOW', 1: 'MEDIUM', 2: 'HIGH', 3: 'CRITICAL'}
-            risk_level_str = int_to_str.get(risk_raw, 'LOW')
+            int_to_str = {0: 'LOW RISK', 1: 'MEDIUM RISK', 2: 'HIGH RISK', 3: 'CRITICAL RISK'}
+            risk_label_str = int_to_str.get(risk_raw, 'LOW RISK')
         else:
-            risk_level_str = str(risk_raw).upper()
+            risk_label_str = f"{str(risk_raw).upper()} RISK"
 
-        ui_mapping = {
-            'LOW': {'label': 'LOW RISK', 'score': 95, 'hex': '#4ADE80', 'text': 'text-green-400'},
-            'MEDIUM': {'label': 'MEDIUM RISK', 'score': 75, 'hex': '#FDE047', 'text': 'text-yellow-300'},
-            'HIGH': {'label': 'HIGH RISK', 'score': 40, 'hex': '#FB923C', 'text': 'text-orange-400'},
-            'CRITICAL': {'label': 'CRITICAL RISK', 'score': 15, 'hex': '#F87171', 'text': 'text-red-400'}
-        }
-        risk_info = ui_mapping.get(risk_level_str, ui_mapping['LOW'])
+        # USE DYNAMIC SCORE FROM CELERY TASK
+        actual_score = scan_data.get('score', 100)
+
+        # Dynamic color styling based on the actual score
+        if actual_score >= 80:
+            hex_color, text_color = '#4ADE80', 'text-green-400'
+        elif actual_score >= 60:
+            hex_color, text_color = '#FDE047', 'text-yellow-300'
+        elif actual_score >= 40:
+            hex_color, text_color = '#FB923C', 'text-orange-400'
+        else:
+            hex_color, text_color = '#F87171', 'text-red-400'
 
         vulnerability_details = scan_data.get('vulnerability_details', {})
         if not vulnerability_details and 'vector' in scan_data:
@@ -126,10 +132,10 @@ def scan_report(request, task_id):
         context = {
             'url': url,
             'engine': 'Random Forest Classifier',
-            'risk_label': risk_info['label'],
-            'risk_score': risk_info['score'],
-            'score_hex': risk_info['hex'],
-            'risk_text_color': risk_info['text'],
+            'risk_label': risk_label_str,
+            'risk_score': actual_score,            # Dynamically displays 50
+            'score_hex': hex_color,
+            'risk_text_color': text_color,
             'total_issues': len(found_vulns),
             'is_ollama': False,
             'novel_details': '',

@@ -34,7 +34,9 @@ def run_vulnex_scan(target_url, website_id=1):
         
         risk_labels = {0: 'Low', 1: 'Medium', 2: 'High', 3: 'Critical'}
         rf_risk = risk_labels.get(prediction, 'Low')
-        security_score = round(100 - (prediction * 25 + (100 - confidence) * 0.1), 2)
+        VECTOR_WEIGHTS = [20, 15, 5, 25, 5, 5, 15, 10, 5, 5, 10, 5]
+        total_deduction = sum(bit * weight for bit, weight in zip(binary_vector, VECTOR_WEIGHTS))
+        security_score = max(0, 100 - total_deduction)
         
         print(f"[✅ KNOWN THREATS DETECTED] RF Risk: {rf_risk} | Score: {security_score}/100")
 
@@ -77,7 +79,7 @@ def run_vulnex_scan(target_url, website_id=1):
 
     try:
         response = requests.post(
-            "http://localhost:11434/api/chat",
+            "http://127.0.0.1:11434/api/chat",
             json={
                 "model": "llama3",
                 "messages": [
