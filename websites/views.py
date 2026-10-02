@@ -125,23 +125,31 @@ def scan_report(request, task_id):
             vulnerability_details = {keys[i]: bool(vector[i]) for i in range(min(len(keys), len(vector)))}
 
         found_vulns = [
+    VULNERABILITY_DICT[key]
+    for key, is_vulnerable in vulnerability_details.items()
+    if is_vulnerable and key in VULNERABILITY_DICT
+]
+
+        not_detected_vulns = [
             VULNERABILITY_DICT[key]
             for key, is_vulnerable in vulnerability_details.items()
-            if is_vulnerable and key in VULNERABILITY_DICT
+            if not is_vulnerable and key in VULNERABILITY_DICT
         ]
 
         context = {
             'url': url,
             'engine': 'Random Forest Classifier',
             'risk_label': risk_label_str,
-            'risk_score': actual_score,            # Dynamically displays 50
+            'risk_score': actual_score,
             'score_hex': hex_color,
             'risk_text_color': text_color,
             'total_issues': len(found_vulns),
+            'total_passed': len(not_detected_vulns),
             'is_ollama': False,
             'novel_details': '',
             'found_vulns': found_vulns,
-            'raw_flags': vulnerability_details 
+            'not_detected_vulns': not_detected_vulns,
+            'raw_flags': vulnerability_details
         }
         return render(request, 'websites/report.html', context)
         

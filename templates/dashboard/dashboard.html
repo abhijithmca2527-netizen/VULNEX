@@ -243,8 +243,7 @@
                     </div>
                     <a href="#vulnerabilities"
                         class="px-3.5 py-2 text-slate-300 hover:text-white rounded-lg transition">Coverage</a>
-                    <a href="#pricing"
-                        class="px-3.5 py-2 text-slate-300 hover:text-white rounded-lg transition">Pricing</a>
+                    
                     <a href="#faq" class="px-3.5 py-2 text-slate-300 hover:text-white rounded-lg transition">FAQ</a>
                 </nav>
                 <div class="hidden lg:flex items-center gap-4">
@@ -286,8 +285,7 @@
                 class="block px-3 py-2.5 rounded-lg text-sm text-slate-300 hover:bg-panelsoft">Product</a>
             <a href="#vulnerabilities"
                 class="block px-3 py-2.5 rounded-lg text-sm text-slate-300 hover:bg-panelsoft">Coverage</a>
-            <a href="#pricing"
-                class="block px-3 py-2.5 rounded-lg text-sm text-slate-300 hover:bg-panelsoft">Pricing</a>
+            
             <a href="#faq" class="block px-3 py-2.5 rounded-lg text-sm text-slate-300 hover:bg-panelsoft">FAQ</a>
             <div class="pt-3 mt-2 border-t border-line flex flex-col gap-3">
                 {% if request.session.user_id %}
@@ -356,7 +354,7 @@
 
             <div class="flex flex-wrap items-center justify-center gap-x-10 gap-y-4 mt-14">
                 <div class="text-center">
-                    <p class="font-display text-2xl font-semibold text-white">300+</p>
+                    <p class="font-display text-2xl font-semibold text-white">12+</p>
                     <p class="text-xs text-slate-500 mt-1">vulnerability checks</p>
                 </div>
                 <div class="text-center">
@@ -409,7 +407,7 @@
                     </svg>
                 </div>
                 <h3 class="font-display font-semibold text-white mb-1.5">OWASP Top 10 detection</h3>
-                <p class="text-sm text-slate-400">Catches SQL injection, XSS, broken access control, and the rest of the
+                <p class="text-sm text-slate-400">Catches Missing CSP, HSTS, x_frame_options, and the rest of the
                     Top 10 out of the box.</p>
             </div>
             <div class="bg-panel border border-line rounded-2xl p-6 hover:border-cyan/40 transition">
@@ -459,7 +457,7 @@
                         <path d="M12 12l7-4M12 12v8M12 12L5 8" stroke="currentColor" stroke-width="1.6" />
                     </svg>
                 </div>
-                <h3 class="font-display font-semibold text-white mb-1.5">API scanning</h3>
+                <h3 class="font-display font-semibold text-white mb-1.5">Web API scanning</h3>
                 <p class="text-sm text-slate-400">Import an OpenAPI spec for deeper endpoint-by-endpoint coverage of
                     your APIs.</p>
             </div>
@@ -503,7 +501,7 @@
             <div class="bg-panel border border-line rounded-2xl p-7">
                 <span
                     class="text-xs font-mono text-low bg-low/10 border border-low/30 px-2.5 py-1 rounded-full">Passive</span>
-                <h3 class="font-display text-xl font-semibold text-white mt-4 mb-2">Quick Scan</h3>
+                <h3 class="font-display text-xl font-semibold text-white mt-4 mb-2">Quick Scan (5s) </h3>
                 <p class="text-sm text-slate-400 mb-5">Loads your pages and checks for misconfigurations, insecure
                     cookies, and vulnerable JS dependencies — without touching your data.</p>
                 <ul class="space-y-2.5 text-sm text-slate-300">
@@ -520,19 +518,16 @@
             </div>
             <div class="bg-panel border border-cyan/30 rounded-2xl p-7 relative">
                 <span
-                    class="text-xs font-mono text-crit bg-crit/10 border border-crit/30 px-2.5 py-1 rounded-full">Active</span>
-                <h3 class="font-display text-xl font-semibold text-white mt-4 mb-2">Deep Scan</h3>
-                <p class="text-sm text-slate-400 mb-5">Submits forms and requests to actively test for SQL injection,
-                    command execution, and cross-site scripting.</p>
+                    class="text-xs font-mono text-crit bg-crit/10 border border-crit/30 px-2.5 py-1 rounded-full">Model Passive</span>
+                <h3 class="font-display text-xl font-semibold text-white mt-4 mb-2">Deep Scan (15s) </h3>
+                <p class="text-sm text-slate-400 mb-5">Submits forms and requests to Local AI Ollama model which check further Threats.</p>
                 <ul class="space-y-2.5 text-sm text-slate-300">
                     <li class="flex items-center gap-2"><span
                             class="w-1.5 h-1.5 rounded-full bg-crit severity-dot"></span>Thorough — full-depth
                         vulnerability coverage</li>
+                    
                     <li class="flex items-center gap-2"><span
-                            class="w-1.5 h-1.5 rounded-full bg-crit severity-dot"></span>Requires authorization on the
-                        target</li>
-                    <li class="flex items-center gap-2"><span
-                            class="w-1.5 h-1.5 rounded-full bg-crit severity-dot"></span>May take up to an hour for full
+                            class="w-1.5 h-1.5 rounded-full bg-crit severity-dot"></span>May take up 15-30s for full
                         coverage</li>
                 </ul>
             </div>
@@ -588,28 +583,12 @@
                 </div>
             </div>
 
-            <div class="accordion-item bg-panel border border-line rounded-xl overflow-hidden">
-                <button onclick="toggleAccordion(this)"
-                    class="w-full flex items-center justify-between px-5 py-4 text-left">
-                    <span class="font-medium text-slate-100">Injection Vulnerabilities <span
-                            class="text-slate-500 font-mono text-xs ml-2">15 checks</span></span>
-                    <svg class="chevron w-4 h-4 text-slate-400 shrink-0" viewBox="0 0 24 24" fill="none">
-                        <path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
-                    </svg>
-                </button>
-                <div class="accordion-panel px-5">
-                    <ul class="pb-4 text-sm text-slate-400 space-y-1.5 font-mono">
-                        <li>· SQL injection across form fields and parameters</li>
-                        <li>· Command injection in user-supplied input</li>
-                        <li>· LDAP and XPath injection</li>
-                    </ul>
-                </div>
-            </div>
+            
 
             <div class="accordion-item bg-panel border border-line rounded-xl overflow-hidden">
                 <button onclick="toggleAccordion(this)"
                     class="w-full flex items-center justify-between px-5 py-4 text-left">
-                    <span class="font-medium text-slate-100">Cross-Site Scripting (XSS) <span
+                    <span class="font-medium text-slate-100">Content Security-Policy (CSP) <span
                             class="text-slate-500 font-mono text-xs ml-2">6 checks</span></span>
                     <svg class="chevron w-4 h-4 text-slate-400 shrink-0" viewBox="0 0 24 24" fill="none">
                         <path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
@@ -617,9 +596,12 @@
                 </button>
                 <div class="accordion-panel px-5">
                     <ul class="pb-4 text-sm text-slate-400 space-y-1.5 font-mono">
-                        <li>· Reflected XSS in query parameters</li>
-                        <li>· Stored XSS in form submissions</li>
-                        <li>· DOM-based XSS in client-side scripts</li>
+                        <li>· CSP header present</li>
+                        <li>· default-src directive configured</li>
+                        <li>· script-src directive configured</li>
+                        <li>· unsafe-inline / unsafe-eval usage</li>
+                        <li>· wildcard (*) source usage</li>
+                        <li>· object-src / base-uri restrictions</li>
                     </ul>
                 </div>
             </div>
@@ -760,8 +742,7 @@
                     </svg>
                 </button>
                 <div class="accordion-panel px-5">
-                    <p class="pb-4 text-sm text-slate-400">Yes, every account can run Quick Scans for free. Deep Scans
-                        and continuous monitoring are available on paid plans.</p>
+                    <p class="pb-4 text-sm text-slate-400">Yes, every account can run Both Scans for free.</p>
                 </div>
             </div>
         </div>
@@ -801,7 +782,7 @@
                     <li><a href="#features" class="hover:text-cyan">Features</a></li>
                     <li><a href="#scan-types" class="hover:text-cyan">Scan types</a></li>
                     <li><a href="#vulnerabilities" class="hover:text-cyan">Coverage</a></li>
-                    <li><a href="#pricing" class="hover:text-cyan">Pricing</a></li>
+                    
                 </ul>
             </div>
             <div>

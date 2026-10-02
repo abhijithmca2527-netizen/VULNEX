@@ -156,6 +156,84 @@ h1,h2,h3{font-family:"Space Grotesk",sans-serif}
 </div>
 </div>
 
+<!-- Not Detected / Passed Security Checks -->
+<div class="card rounded-2xl overflow-hidden mb-8">
+
+    <div class="px-6 py-4 border-b border-slate-800 flex justify-between items-center">
+        <h2 class="text-2xl font-bold">Security Checks Passed</h2>
+
+        <span class="bg-green-400/10 text-green-400 text-sm px-3 py-1 rounded-full border border-green-400/20">
+            {{ total_passed }} Not Detected
+        </span>
+    </div>
+
+    <div class="overflow-x-auto">
+        <table class="w-full">
+
+            <thead class="bg-slate-900/50">
+                <tr>
+                    <th class="text-left p-4 text-slate-400 font-medium">Type</th>
+                    <th class="text-left p-4 text-slate-400 font-medium">Security Check</th>
+                    <th class="text-left p-4 text-slate-400 font-medium">Description</th>
+                    <th class="text-left p-4 text-slate-400 font-medium">Status</th>
+                </tr>
+            </thead>
+
+            <tbody>
+
+                {% if is_ollama %}
+
+                    <tr>
+                        <td colspan="4" class="p-8 text-center text-slate-500">
+                            Security feature checks are not applicable to the Tier 2
+                            semantic inspection.
+                        </td>
+                    </tr>
+
+                {% else %}
+
+                    {% for vuln in not_detected_vulns %}
+
+                    <tr class="border-t border-slate-800/50 hover:bg-slate-800/20 transition">
+
+                        <td class="p-4 text-cyan-400 font-bold whitespace-nowrap">
+                            Config / Header
+                        </td>
+
+                        <td class="p-4 font-medium">
+                            {{ vuln.name }}
+                        </td>
+
+                        <td class="p-4 text-slate-400 text-sm max-w-md">
+                            {{ vuln.description }}
+                        </td>
+
+                        <td class="p-4">
+                            <span class="bg-green-400/10 text-green-400 px-2 py-1 rounded text-xs border border-green-400/20">
+                                Not Detected
+                            </span>
+                        </td>
+
+                    </tr>
+
+                    {% empty %}
+
+                    <tr>
+                        <td colspan="4" class="p-8 text-center text-slate-400">
+                            No additional checks were available.
+                        </td>
+                    </tr>
+
+                    {% endfor %}
+
+                {% endif %}
+
+            </tbody>
+
+        </table>
+    </div>
+</div>
+
 <!-- Recommendations and Details -->
 <div class="grid lg:grid-cols-2 gap-6">
 
