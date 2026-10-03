@@ -7,7 +7,7 @@ from sklearn.metrics import classification_report
 print("[VULNEX AI] Loading dataset from CSV...")
 
 # 1. Load the CSV file you got from Claude
-df = pd.read_csv('vulnex_dataset.csv')
+df = pd.read_csv('vulnex_dataset (2).csv')
 
 # 2. Separate Features (Inputs) and Target (Output)
 # We drop the cvss score and risk category so the AI only looks at the 12 binary flags
@@ -23,7 +23,7 @@ model = RandomForestClassifier(n_estimators=100, random_state=42)
 model.fit(X_train, y_train)
 
 # 5. Evaluate the Model's accuracy
-print("\n[VULNEX AI] Model Performance Report:")
+print("\n[VU    LNEX AI] Model Performance Report:")
 y_pred = model.predict(X_test)
 print(classification_report(y_test, y_pred, target_names=['Low', 'Medium', 'High', 'Critical']))
 

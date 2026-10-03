@@ -8,6 +8,7 @@ Terminal Start Up
 2(Terminal)==>celery -A Vulnex worker --loglevel=info -P solo
 3(Terminal)==>1.wsl
 	      	  2.sudo service redis-server start
+			  password:123
 
 PHASE-II
 1.Random Forest 
