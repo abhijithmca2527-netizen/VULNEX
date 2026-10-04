@@ -1,75 +1,204 @@
 import os
 import joblib
 import numpy as np
+import warnings
 
-# Dynamically find the .pkl files in the root folder
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-RF_MODEL_PATH = os.path.join(BASE_DIR, 'vulnex_model.pkl')
-IFOREST_MODEL_PATH = os.path.join(BASE_DIR, 'isolation_forest.pkl')
+
+# ============================================================
+# RANDOM FOREST MODEL PATH
+# ============================================================
+
+BASE_DIR = os.path.dirname(
+    os.path.dirname(
+        os.path.abspath(__file__)
+    )
+)
+
+RF_MODEL_PATH = os.path.join(
+    BASE_DIR,
+    "vulnex_model.pkl"
+)
+
+
+# ============================================================
+# VULNEX RANDOM FOREST ENGINE
+# ============================================================
 
 class VulnexAIEngine:
-    def __init__(self):
-        # 1. Load Random Forest Model (Risk Severity)
-        if os.path.exists(RF_MODEL_PATH):
-            self.rf_model = joblib.load(RF_MODEL_PATH)
-        else:
-            self.rf_model = None
-            print(f"[ERROR] Random Forest Model not found at {RF_MODEL_PATH}")
 
-        # 2. Load Isolation Forest Model (Anomaly Detection)
-        if os.path.exists(IFOREST_MODEL_PATH):
-            self.iforest_model = joblib.load(IFOREST_MODEL_PATH)
+    def __init__(self):
+
+        if os.path.exists(RF_MODEL_PATH):
+
+            self.rf_model = joblib.load(
+                RF_MODEL_PATH
+            )
+
+            print(
+                "[VULNEX] Random Forest model loaded."
+            )
+
         else:
-            self.iforest_model = None
-            print(f"[ERROR] Isolation Forest Model not found at {IFOREST_MODEL_PATH}")
+
+            self.rf_model = None
+
+            print(
+                "[VULNEX ERROR] Random Forest model "
+                f"not found at: {RF_MODEL_PATH}"
+            )
+
+
+    # ========================================================
+    # RANDOM FOREST RISK PREDICTION
+    # ========================================================
 
     def predict_risk(self, feature_vector):
-        if not self.rf_model:
+
+        if self.rf_model is None:
+
             return {
                 "risk_level": "Unknown",
                 "security_score": 0,
                 "confidence": 0.0,
-                "is_anomaly": False
+                "source": "Random Forest Classifier"
             }
 
-        input_data = np.array(feature_vector).reshape(1, -1)
+        # ----------------------------------------------------
+        # Validate input
+        # ----------------------------------------------------
 
-        # 1. Raw Prediction & Class Mapping
-        predicted_class = self.rf_model.predict(input_data)[0]
-        probabilities = self.rf_model.predict_proba(input_data)[0]
-        classes = list(self.rf_model.classes_)
+        if len(feature_vector) != 12:
 
-        # Normalize predicted label
-        if isinstance(predicted_class, (int, np.integer)):
-            risk_map = {0: "Low", 1: "Medium", 2: "High"}
-            predicted_risk = risk_map.get(predicted_class, "Low")
+            raise ValueError(
+                "Random Forest expected 12 features, "
+                f"but received {len(feature_vector)}."
+            )
+
+        input_data = np.array(
+            feature_vector,
+            dtype=int
+        ).reshape(1, -1)
+
+
+        # ----------------------------------------------------
+        # Prediction
+        # ----------------------------------------------------
+
+        with warnings.catch_warnings():
+
+            warnings.filterwarnings(
+                "ignore",
+                message="X does not have valid feature names"
+            )
+
+            predicted_class = (
+                self.rf_model.predict(
+                    input_data
+                )[0]
+            )
+
+            probabilities = (
+                self.rf_model.predict_proba(
+                    input_data
+                )[0]
+            )
+
+
+        # ----------------------------------------------------
+        # Convert model class into risk label
+        # ----------------------------------------------------
+
+        if isinstance(
+            predicted_class,
+            (int, np.integer)
+        ):
+
+            risk_map = {
+                0: "Low",
+                1: "Medium",
+                2: "High"
+            }
+
+            predicted_risk = risk_map.get(
+                int(predicted_class),
+                "Low"
+            )
+
         else:
-            predicted_risk = str(predicted_class)
 
-        # 2. Compute 0-100 Dynamic Security Score
-        # Safe score is directly tied to the probability of 'Low' risk (or 0)
-        low_target = 0 if 0 in classes else 'Low'
-        if low_target in classes:
-            low_idx = classes.index(low_target)
-            safe_prob = probabilities[low_idx]
+            predicted_risk = str(
+                predicted_class
+            ).strip().title()
+
+
+        # ----------------------------------------------------
+        # Prediction confidence
+        # ----------------------------------------------------
+
+        confidence = round(
+            float(
+                np.max(probabilities) * 100
+            ),
+            2
+        )
+
+
+        # ----------------------------------------------------
+        # Model-based score
+        #
+        # This is returned for reference.
+        # Main VulnEx score is calculated in tasks.py.
+        # ----------------------------------------------------
+
+        classes = list(
+            self.rf_model.classes_
+        )
+
+        low_targets = [
+            0,
+            "Low",
+            "low"
+        ]
+
+        low_index = None
+
+        for target in low_targets:
+
+            if target in classes:
+
+                low_index = classes.index(
+                    target
+                )
+
+                break
+
+
+        if low_index is not None:
+
+            safe_probability = float(
+                probabilities[low_index]
+            )
+
         else:
-            safe_prob = 1.0 - (np.sum(feature_vector) / len(feature_vector))
 
-        security_score = round(float(safe_prob * 100), 2)
-        confidence = round(float(np.max(probabilities) * 100), 2)
+            safe_probability = max(
+                0.0,
+                1.0 - (
+                    sum(feature_vector)
+                    / len(feature_vector)
+                )
+            )
 
-        # 3. Isolation Forest Anomaly Prediction
-        is_anomaly = False
-        if self.iforest_model:
-            try:
-                iforest_prediction = self.iforest_model.predict(input_data)[0]
-                is_anomaly = True if iforest_prediction == -1 else False
-            except Exception as e:
-                print(f"[WARNING] Isolation Forest error: {e}")
+
+        model_security_score = round(
+            safe_probability * 100,
+            2
+        )
+
 
         return {
             "risk_level": predicted_risk,
-            "security_score": security_score,
+            "security_score": model_security_score,
             "confidence": confidence,
-            "is_anomaly": is_anomaly
+            "source": "Random Forest Classifier"
         }

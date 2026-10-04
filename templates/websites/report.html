@@ -2,8 +2,13 @@
 <html lang="en">
 
 <head>
+
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
 
     <title>VulNex - Scan Report</title>
 
@@ -15,6 +20,7 @@
     >
 
     <style>
+
         body {
             font-family: Inter, sans-serif;
             background: #050816;
@@ -46,7 +52,9 @@
 
             background-size: 42px 42px;
         }
+
     </style>
+
 </head>
 
 
@@ -60,13 +68,17 @@
 <nav
     class="sticky top-0 bg-[#050816]/80 backdrop-blur border-b border-slate-800 z-50"
 >
+
     <div
         class="max-w-7xl mx-auto px-8 h-16 flex items-center justify-between"
     >
 
         <div class="text-2xl font-bold">
+
             Vuln<span class="text-cyan-400">Ex</span>
+
         </div>
+
 
         <div class="space-x-6 text-slate-300">
 
@@ -77,12 +89,14 @@
                 Dashboard
             </a>
 
+
             <a
                 href="/history/"
                 class="hover:text-white transition"
             >
                 History
             </a>
+
 
             <a
                 href="/reports/"
@@ -94,8 +108,8 @@
         </div>
 
     </div>
-</nav>
 
+</nav>
 
 
 <div class="max-w-7xl mx-auto px-8 py-10">
@@ -115,15 +129,22 @@
             Security Scan Report
         </h1>
 
+
         <p class="text-slate-400 mt-2">
+
             Target:
+
             <span class="text-cyan-400 font-mono">
                 {{ url }}
             </span>
+
         </p>
 
+
         <p class="text-slate-500 text-sm">
+
             Completed • {% now "F j, Y" %} • Powered by VulNex AI
+
         </p>
 
     </div>
@@ -141,7 +162,6 @@
     </div>
 
 </div>
-
 
 
 <!-- =====================================================
@@ -165,6 +185,7 @@
         >
 
             <!-- Background circle -->
+
             <circle
                 cx="60"
                 cy="60"
@@ -174,7 +195,9 @@
                 stroke-width="12"
             />
 
+
             <!-- Dynamic score circle -->
+
             <circle
                 cx="60"
                 cy="60"
@@ -200,6 +223,7 @@
                 {{ risk_score }}
             </div>
 
+
             <div class="text-xs text-slate-400 mt-1">
                 Health Score
             </div>
@@ -216,7 +240,6 @@
 </div>
 
 
-
 <!-- =====================================================
      AI SUMMARY
 ===================================================== -->
@@ -227,36 +250,44 @@
         AI Prediction Summary
     </h3>
 
+
     <div class="space-y-2">
 
         <p>
+
             Model Confidence
 
             <span class="float-right font-bold text-cyan-400">
                 {{ confidence }}%
             </span>
+
         </p>
 
+
         <p>
+
             Total Issues Found
 
             <span class="float-right font-bold text-slate-200">
                 {{ total_issues }}
             </span>
+
         </p>
 
+
         <p>
+
             Passive Checks
 
             <span class="float-right font-bold text-slate-200">
                 12 / 12
             </span>
+
         </p>
 
     </div>
 
 </div>
-
 
 
 <!-- =====================================================
@@ -268,6 +299,7 @@
     <h3 class="text-slate-400 mb-3">
         Detected Vectors
     </h3>
+
 
     <div class="flex flex-wrap gap-2">
 
@@ -316,7 +348,6 @@
 </div>
 
 
-
 <!-- =====================================================
      SCAN STATUS
 ===================================================== -->
@@ -326,6 +357,7 @@
     <h3 class="text-slate-400 mb-3">
         Scan Status
     </h3>
+
 
     <p
         class="text-green-400 font-semibold flex items-center gap-2"
@@ -339,12 +371,14 @@
 
     </p>
 
+
     <p class="text-slate-400 mt-2 text-sm">
         Vector Size: 12-Bit
     </p>
 
+
     <p class="text-slate-400 text-sm">
-        Engine: Random Forest Classifier
+        Engine: {{ engine_label }}
     </p>
 
 </div>
@@ -367,6 +401,7 @@
             Detected Vulnerabilities
         </h2>
 
+
         <span
             class="bg-slate-800 text-sm px-3 py-1 rounded-full border border-slate-700"
         >
@@ -380,13 +415,21 @@
 
         <table class="w-full table-fixed">
 
+
             <!-- COLUMN WIDTHS -->
+
             <colgroup>
+
                 <col style="width: 13%;">
+
                 <col style="width: 17%;">
+
                 <col style="width: 37%;">
+
                 <col style="width: 28%;">
+
                 <col style="width: 5%;">
+
             </colgroup>
 
 
@@ -394,23 +437,37 @@
 
                 <tr>
 
-                    <th class="text-left p-4 text-slate-400 font-medium">
+                    <th
+                        class="text-left p-4 text-slate-400 font-medium"
+                    >
                         Type
                     </th>
 
-                    <th class="text-left p-4 text-slate-400 font-medium">
+
+                    <th
+                        class="text-left p-4 text-slate-400 font-medium"
+                    >
                         Finding
                     </th>
 
-                    <th class="text-left p-4 text-slate-400 font-medium">
+
+                    <th
+                        class="text-left p-4 text-slate-400 font-medium"
+                    >
                         Issue
                     </th>
 
-                    <th class="text-left p-4 text-slate-400 font-medium">
+
+                    <th
+                        class="text-left p-4 text-slate-400 font-medium"
+                    >
                         Description
                     </th>
 
-                    <th class="text-left p-4 text-slate-400 font-medium">
+
+                    <th
+                        class="text-left p-4 text-slate-400 font-medium"
+                    >
                         Status
                     </th>
 
@@ -503,7 +560,6 @@
 
                 {% empty %}
 
-
                 <tr>
 
                     <td
@@ -515,9 +571,11 @@
                             🎉
                         </div>
 
+
                         <div class="font-bold">
                             Perfect Architecture!
                         </div>
+
 
                         <div class="text-sm text-green-400/70">
                             No passive vulnerabilities were detected
@@ -527,7 +585,6 @@
                     </td>
 
                 </tr>
-
 
                 {% endfor %}
 
@@ -557,6 +614,7 @@
         AI Remediation Fixes
     </h2>
 
+
     <ul class="space-y-3 text-slate-300">
 
         {% for vuln in found_vulns %}
@@ -567,17 +625,21 @@
                 ↳
             </span>
 
+
             <span>
                 {{ vuln.fix }}
             </span>
 
         </li>
 
+
         {% empty %}
 
         <li class="text-slate-500">
+
             No remediation required.
             The target environment is secure.
+
         </li>
 
         {% endfor %}
@@ -585,7 +647,6 @@
     </ul>
 
 </div>
-
 
 
 <!-- =====================================================
@@ -598,6 +659,7 @@
         Pipeline Details
     </h2>
 
+
     <div
         class="space-y-3 text-slate-300 font-mono text-sm"
     >
@@ -605,6 +667,7 @@
         <p
             class="flex justify-between border-b border-slate-800 pb-2"
         >
+
             <span>
                 [01] Target Parsing
             </span>
@@ -612,12 +675,14 @@
             <span class="text-green-400">
                 OK
             </span>
+
         </p>
 
 
         <p
             class="flex justify-between border-b border-slate-800 pb-2"
         >
+
             <span>
                 [02] SSL/TLS Inspection
             </span>
@@ -625,12 +690,14 @@
             <span class="text-green-400">
                 OK
             </span>
+
         </p>
 
 
         <p
             class="flex justify-between border-b border-slate-800 pb-2"
         >
+
             <span>
                 [03] HTTP Header Extraction
             </span>
@@ -638,12 +705,14 @@
             <span class="text-green-400">
                 OK
             </span>
+
         </p>
 
 
         <p
             class="flex justify-between border-b border-slate-800 pb-2"
         >
+
             <span>
                 [04] Body/Signature Mapping
             </span>
@@ -651,12 +720,14 @@
             <span class="text-green-400">
                 OK
             </span>
+
         </p>
 
 
         <p
             class="flex justify-between border-b border-slate-800 pb-2"
         >
+
             <span>
                 [05] 12-Bit Vector Assembly
             </span>
@@ -664,13 +735,14 @@
             <span class="text-green-400">
                 OK
             </span>
+
         </p>
 
 
         <p class="flex justify-between">
 
             <span>
-                [06] ML Predictive Inference
+                [06] AI Predictive Inference
             </span>
 
             <span class="text-cyan-400">
@@ -691,4 +763,5 @@
 
 
 </body>
+
 </html>

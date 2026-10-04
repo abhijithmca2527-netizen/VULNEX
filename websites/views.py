@@ -1,28 +1,31 @@
 from django.shortcuts import render, redirect
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponse
 from celery.result import AsyncResult
+from django.urls import reverse
 
 from .tasks import run_vulnex_scan
 from .utils import VULNERABILITY_DICT
 from .ml_engine import VulnexAIEngine
-from django.urls import reverse
 from .models import Scan, Vulnerability
 
 
+# ============================================================
+# DASHBOARD
+# ============================================================
+
 def dashboard_view(request):
-    """Renders the main dashboard template."""
+
     return render(
         request,
         "dashboard.html"
     )
 
 
+# ============================================================
+# START SCAN
+# ============================================================
+
 def start_scan_view(request):
-    """
-    Handles URL submission,
-    sends the scan to Celery with the logged-in user ID,
-    and loads the spinner page.
-    """
 
     if request.method == "POST":
 
@@ -35,14 +38,13 @@ def start_scan_view(request):
         )
 
         if not user_id:
+
             return redirect(
                 "login"
             )
 
         if target_url:
 
-            # Pass target URL + logged-in user ID
-            # so the Celery task can save scan data to Supabase.
             task = run_vulnex_scan.delay(
                 target_url,
                 user_id
@@ -61,11 +63,15 @@ def start_scan_view(request):
         "dashboard"
     )
 
-def check_scan_status(request, task_id):
-    """
-    Loading screen checks this endpoint
-    until Celery finishes the scan.
-    """
+
+# ============================================================
+# CHECK CELERY TASK STATUS
+# ============================================================
+
+def check_scan_status(
+    request,
+    task_id
+):
 
     task_result = AsyncResult(
         task_id
@@ -94,41 +100,62 @@ def check_scan_status(request, task_id):
     )
 
 
-
+# ============================================================
+# FIXED FEATURE ORDER
+# ============================================================
 
 FEATURE_KEYS = [
+
     "missing_hsts",
+
     "missing_x_frame_options",
+
     "missing_x_content_type_options",
+
     "missing_csp",
+
     "exposed_server_header",
+
     "exposed_x_powered_by",
+
     "weak_ssl_certificate",
+
     "exposed_dir_listing",
+
     "missing_httponly_cookie",
+
     "missing_secure_cookie",
+
     "cors_wildcard",
+
     "outdated_cms_header",
 ]
 
 
+# ============================================================
+# REBUILD SAVED VECTOR
+# ============================================================
+
 def rebuild_saved_scan_vector(scan):
-    """
-    Rebuild the 12-bit vector from saved VULNERABILITIES rows.
-    This lets old saved reports show current-model confidence
-    without adding a new database column.
-    """
 
     stored_names = {
-        str(name).strip().lower()
-        for name in (
-            Vulnerability.objects
-            .filter(scan=scan)
-            .values_list("vulnerability_name", flat=True)
+
+        str(name)
+        .strip()
+        .lower()
+
+        for name
+        in Vulnerability.objects.filter(
+            scan=scan
+        ).values_list(
+            "vulnerability_name",
+            flat=True
         )
     }
 
+
     vector = []
+
 
     for key in FEATURE_KEYS:
 
@@ -137,33 +164,90 @@ def rebuild_saved_scan_vector(scan):
             {}
         )
 
-        expected_name = str(
-            info.get("name", "")
-        ).strip().lower()
+        expected_name = (
+            str(
+                info.get(
+                    "name",
+                    ""
+                )
+            )
+            .strip()
+            .lower()
+        )
+
 
         vector.append(
-            1 if expected_name in stored_names else 0
+
+            1
+            if expected_name
+            in stored_names
+            else 0
+
         )
+
 
     return vector
 
 
+# ============================================================
+# SAVED SCAN CONFIDENCE
+# ============================================================
+
 def recompute_saved_confidence(scan):
-    """
-    Confidence is not stored in the current SCANS table.
-    Recompute it from the saved vulnerability vector.
-    """
 
     try:
+
+        risk_level = (
+            str(
+                scan.risk_level
+                or ""
+            )
+            .strip()
+            .upper()
+        )
+
+
+        # Clean scans are handled by Ollama in the
+        # current VulnEx architecture.
+        #
+        # Do not send an all-zero vector back through
+        # Random Forest just to calculate confidence.
+
+        if risk_level == "CLEAN":
+
+            return 0
+
+
+        # Semantic Zero-Day findings also belong
+        # to the Ollama path.
+
+        semantic_exists = (
+            Vulnerability.objects.filter(
+                scan=scan,
+                vulnerability_name=(
+                    "Semantic Zero-Day Threat"
+                )
+            ).exists()
+        )
+
+
+        if semantic_exists:
+
+            return 0
+
 
         vector = rebuild_saved_scan_vector(
             scan
         )
 
+
         result = (
             VulnexAIEngine()
-            .predict_risk(vector)
+            .predict_risk(
+                vector
+            )
         )
+
 
         return round(
             float(
@@ -175,96 +259,247 @@ def recompute_saved_confidence(scan):
             2
         )
 
+
     except Exception:
 
         return 0
 
 
 # ============================================================
-# BUILD REPORT CONTEXT FROM A SAVED SUPABASE SCAN
+# DATABASE / SAVED REPORT CONTEXT
 # ============================================================
 
 def build_database_report_context(scan):
-    """
-    Builds the same report.html context from a permanent
-    SCANS + VULNERABILITIES record in Supabase.
-    """
 
     vulnerabilities = (
         Vulnerability.objects
-        .filter(scan=scan)
-        .order_by("vulnerability_id")
+        .filter(
+            scan=scan
+        )
+        .order_by(
+            "vulnerability_id"
+        )
     )
 
+
     found_vulns = []
+
     raw_flags = {}
+
+    semantic_ollama_finding = False
+
+
+    # ========================================================
+    # LOAD SAVED VULNERABILITIES
+    # ========================================================
 
     for vulnerability in vulnerabilities:
 
         matched_key = None
+
         vuln_data = None
 
-        # Match the stored vulnerability name back to utils.py
-        # so the saved report keeps the same description/fix.
-        for key, data in VULNERABILITY_DICT.items():
 
-            if (
-                str(data.get("name", "")).strip().lower()
-                ==
-                str(vulnerability.vulnerability_name).strip().lower()
-            ):
-                matched_key = key
-                vuln_data = data.copy()
-                break
+        # ----------------------------------------------------
+        # OLLAMA SEMANTIC FINDING
+        # ----------------------------------------------------
 
-        # Fallback for older/custom stored findings.
-        if vuln_data is None:
+        if (
+            vulnerability.vulnerability_name
+            == "Semantic Zero-Day Threat"
+        ):
+
+            matched_key = (
+                "semantic_zero_day"
+            )
 
             vuln_data = {
+
                 "name":
                     vulnerability.vulnerability_name,
 
                 "description":
-                    vulnerability.description
-                    or "Security weakness detected during passive analysis.",
+                    vulnerability.description,
 
                 "fix":
-                    "Review and apply the recommended security configuration.",
+                    (
+                        "Investigate anomalous "
+                        "configurations and rotate "
+                        "exposed secrets immediately."
+                    ),
             }
 
-        # Prefer the exact stored database description when available.
-        if vulnerability.description:
+            semantic_ollama_finding = True
 
-            vuln_data["description"] = (
-                vulnerability.description
-            )
 
-        # IMPORTANT:
-        # Restore the stored Issue/evidence column.
-        vuln_data["issue"] = (
+        # ----------------------------------------------------
+        # STANDARD VULNEX FINDING
+        # ----------------------------------------------------
+
+        else:
+
+            for (
+                key,
+                data
+            ) in VULNERABILITY_DICT.items():
+
+                expected_name = (
+                    str(
+                        data.get(
+                            "name",
+                            ""
+                        )
+                    )
+                    .strip()
+                    .lower()
+                )
+
+                stored_name = (
+                    str(
+                        vulnerability
+                        .vulnerability_name
+                    )
+                    .strip()
+                    .lower()
+                )
+
+
+                if (
+                    expected_name
+                    == stored_name
+                ):
+
+                    matched_key = key
+
+                    vuln_data = (
+                        data.copy()
+                    )
+
+                    break
+
+
+        # ----------------------------------------------------
+        # UNKNOWN / HISTORICAL FINDING
+        # ----------------------------------------------------
+
+        if vuln_data is None:
+
+            vuln_data = {
+
+                "name":
+                    vulnerability
+                    .vulnerability_name,
+
+                "description":
+                    (
+                        vulnerability.description
+                        or
+                        (
+                            "Security weakness detected "
+                            "during passive analysis."
+                        )
+                    ),
+
+                "fix":
+                    (
+                        "Review and apply the "
+                        "recommended security "
+                        "configuration."
+                    ),
+            }
+
+
+        vuln_data[
+            "issue"
+        ] = (
+
             vulnerability.issue
-            or "Issue detected during passive security analysis."
+
+            or
+
+            (
+                "Issue detected during "
+                "passive security analysis."
+            )
         )
+
 
         if matched_key:
 
-            vuln_data["key"] = matched_key
-            raw_flags[matched_key] = True
+            vuln_data[
+                "key"
+            ] = matched_key
+
+            raw_flags[
+                matched_key
+            ] = True
+
 
         found_vulns.append(
             vuln_data
         )
 
-    # --------------------------------------------------------
-    # RISK STYLE
-    # --------------------------------------------------------
 
-    risk_level = str(
-        scan.risk_level
-        or "UNKNOWN"
-    ).strip().upper()
+    # ========================================================
+    # RISK
+    # ========================================================
+
+    risk_level = (
+        str(
+            scan.risk_level
+            or "UNKNOWN"
+        )
+        .strip()
+        .upper()
+    )
+
+
+    # ========================================================
+    # DETERMINE AI ENGINE
+    #
+    # Current architecture:
+    #
+    # non-zero vector -> Random Forest
+    # zero vector     -> Ollama
+    #
+    # A CLEAN result therefore comes from the Ollama path.
+    # ========================================================
+
+    is_ollama = (
+
+        risk_level == "CLEAN"
+
+        or
+
+        semantic_ollama_finding
+
+    )
+
+
+    if is_ollama:
+
+        engine_label = (
+            "Ollama LLM (Llama 3)"
+        )
+
+    else:
+
+        engine_label = (
+            "Random Forest Classifier"
+        )
+
+
+    # ========================================================
+    # UI RISK MAPPING
+    # ========================================================
 
     ui_mapping = {
+
+        "CLEAN": {
+            "label": "CLEAN",
+            "hex": "#4ADE80",
+            "text": "text-green-400",
+        },
 
         "LOW": {
             "label": "LOW RISK",
@@ -297,23 +532,26 @@ def build_database_report_context(scan):
         },
     }
 
+
     risk_info = ui_mapping.get(
         risk_level,
-        ui_mapping["UNKNOWN"]
+        ui_mapping[
+            "UNKNOWN"
+        ]
     )
 
-    # --------------------------------------------------------
-    # HEALTH SCORE + CONFIDENCE FOR SAVED REPORT
-    # --------------------------------------------------------
 
-    security_score = max(
-        0,
-        100 - (len(found_vulns) * 8)
+    security_score = (
+
+        scan.security_score
+
+        if scan.security_score
+        is not None
+
+        else 100
+
     )
 
-    confidence = recompute_saved_confidence(
-        scan
-    )
 
     return {
 
@@ -333,10 +571,14 @@ def build_database_report_context(scan):
             risk_info["text"],
 
         "confidence":
-            confidence,
+            recompute_saved_confidence(
+                scan
+            ),
 
         "total_issues":
-            len(found_vulns),
+            len(
+                found_vulns
+            ),
 
         "found_vulns":
             found_vulns,
@@ -345,9 +587,23 @@ def build_database_report_context(scan):
             raw_flags,
 
         "issues": {
-            item.get("key", f"finding_{index}"):
-                item.get("issue", "")
-            for index, item in enumerate(found_vulns)
+
+            item.get(
+                "key",
+                f"finding_{index}"
+            ):
+            item.get(
+                "issue",
+                ""
+            )
+
+            for (
+                index,
+                item
+            )
+            in enumerate(
+                found_vulns
+            )
         },
 
         "scan_id":
@@ -355,33 +611,52 @@ def build_database_report_context(scan):
 
         "created_at":
             scan.scan_date,
+
+        "is_ollama":
+            is_ollama,
+
+        "engine_label":
+            engine_label,
     }
 
 
-def scan_report(request, task_id):
-    """
-    Opens BOTH:
-    1. A fresh Celery report using its UUID.
-    2. A saved Supabase report using its numeric scan ID.
-    """
+# ============================================================
+# SCAN REPORT
+# ============================================================
 
-    if "user_id" not in request.session:
+def scan_report(
+    request,
+    task_id
+):
+
+    if (
+        "user_id"
+        not in request.session
+    ):
+
         return redirect(
             "login"
         )
 
-    user_id = request.session.get(
-        "user_id"
+
+    user_id = (
+        request.session.get(
+            "user_id"
+        )
     )
 
-    identifier = str(
-        task_id
-    ).strip()
 
-    # =====================================================
+    identifier = (
+        str(
+            task_id
+        )
+        .strip()
+    )
+
+
+    # ========================================================
     # SAVED DATABASE REPORT
-    # /report/63/
-    # =====================================================
+    # ========================================================
 
     if identifier.isdigit():
 
@@ -389,24 +664,28 @@ def scan_report(request, task_id):
 
             scan = (
                 Scan.objects
-                .select_related("website")
+                .select_related(
+                    "website"
+                )
                 .get(
-                    pk=int(identifier),
-                    website__user_id=user_id
+                    pk=int(
+                        identifier
+                    ),
+                    website__user_id=(
+                        user_id
+                    )
                 )
             )
 
-            context = (
+
+            return render(
+                request,
+                "websites/report.html",
                 build_database_report_context(
                     scan
                 )
             )
 
-            return render(
-                request,
-                "websites/report.html",
-                context
-            )
 
         except Scan.DoesNotExist:
 
@@ -429,99 +708,146 @@ def scan_report(request, task_id):
                     "risk_text_color":
                         "text-slate-500",
 
-                    "confidence":
-                        0,
-
                     "total_issues":
                         0,
 
-                    "found_vulns":
-                        [],
+                    "is_ollama":
+                        False,
 
-                    "raw_flags":
-                        {},
-
-                    "issues":
-                        {},
+                    "engine_label":
+                        "Unavailable",
                 }
             )
 
-    # =====================================================
-    # FRESH CELERY REPORT
-    # /report/<uuid>/
-    # =====================================================
+
+    # ========================================================
+    # LIVE CELERY RESULT
+    # ========================================================
 
     task_result = AsyncResult(
         identifier
     )
 
-    # =====================================================
-    # SUCCESSFUL SCAN
-    # =====================================================
 
-    if task_result.state == "SUCCESS":
+    if (
+        task_result.state
+        == "SUCCESS"
+    ):
 
-        scan_data = task_result.result
+        scan_data = (
 
-        if not isinstance(
-            scan_data,
-            dict
-        ):
-            scan_data = {}
+            task_result.result
 
-        # =================================================
-        # TARGET URL
-        # =================================================
+            if isinstance(
+                task_result.result,
+                dict
+            )
+
+            else {}
+
+        )
+
 
         url = scan_data.get(
             "url",
             "Target Domain"
         )
 
-        # =================================================
-        # AI PREDICTION
-        # =================================================
 
-        ai_prediction = scan_data.get(
-            "ai_prediction",
-            {}
+        ai_prediction = (
+
+            scan_data.get(
+                "ai_prediction",
+                {}
+            )
+
+            if isinstance(
+                scan_data.get(
+                    "ai_prediction"
+                ),
+                dict
+            )
+
+            else {}
+
         )
 
-        if not isinstance(
-            ai_prediction,
-            dict
-        ):
-            ai_prediction = {}
 
-        risk_raw = scan_data.get(
-            "risk_category"
+        # ====================================================
+        # ENGINE
+        # ====================================================
+
+        source_engine = (
+            scan_data.get(
+                "source"
+            )
+            or
+            ai_prediction.get(
+                "source"
+            )
+            or
+            "Random Forest Classifier"
         )
+
+
+        is_ollama = (
+            source_engine
+            == "Ollama LLM (Llama 3)"
+        )
+
+
+        if is_ollama:
+
+            engine_label = (
+                "Ollama LLM (Llama 3)"
+            )
+
+        else:
+
+            engine_label = (
+                "Random Forest Classifier"
+            )
+
+
+        # ====================================================
+        # RISK
+        # ====================================================
+
+        risk_raw = (
+            scan_data.get(
+                "risk_category"
+            )
+        )
+
 
         if risk_raw is None:
 
-            risk_raw = ai_prediction.get(
-                "risk_level",
-                "Low"
+            risk_raw = (
+                ai_prediction.get(
+                    "risk_level",
+                    "Unknown"
+                )
             )
 
-        # Convert numeric class to name
+
         if isinstance(
             risk_raw,
             int
         ):
 
-            int_to_str = {
-                0: "LOW",
-                1: "MEDIUM",
-                2: "HIGH",
-                3: "CRITICAL",
-            }
+            risk_level_str = {
 
-            risk_level_str = (
-                int_to_str.get(
-                    risk_raw,
-                    "LOW"
-                )
+                0: "LOW",
+
+                1: "MEDIUM",
+
+                2: "HIGH",
+
+                3: "CRITICAL",
+
+            }.get(
+                risk_raw,
+                "UNKNOWN"
             )
 
         else:
@@ -534,83 +860,75 @@ def scan_report(request, task_id):
                 .upper()
             )
 
-        # =================================================
-        # UI RISK STYLE
-        # =================================================
+
+        # ====================================================
+        # UI MAPPING
+        # ====================================================
 
         ui_mapping = {
 
+            "CLEAN": {
+                "label": "CLEAN",
+                "score": 100,
+                "hex": "#4ADE80",
+                "text": "text-green-400",
+            },
+
             "LOW": {
-                "label":
-                    "LOW RISK",
-
-                "score":
-                    95,
-
-                "hex":
-                    "#4ADE80",
-
-                "text":
-                    "text-green-400",
+                "label": "LOW RISK",
+                "score": 95,
+                "hex": "#4ADE80",
+                "text": "text-green-400",
             },
 
             "MEDIUM": {
-                "label":
-                    "MEDIUM RISK",
-
-                "score":
-                    75,
-
-                "hex":
-                    "#FDE047",
-
-                "text":
-                    "text-yellow-300",
+                "label": "MEDIUM RISK",
+                "score": 75,
+                "hex": "#FDE047",
+                "text": "text-yellow-300",
             },
 
             "HIGH": {
-                "label":
-                    "HIGH RISK",
-
-                "score":
-                    40,
-
-                "hex":
-                    "#FB923C",
-
-                "text":
-                    "text-orange-400",
+                "label": "HIGH RISK",
+                "score": 40,
+                "hex": "#FB923C",
+                "text": "text-orange-400",
             },
 
             "CRITICAL": {
-                "label":
-                    "CRITICAL RISK",
+                "label": "CRITICAL RISK",
+                "score": 15,
+                "hex": "#F87171",
+                "text": "text-red-400",
+            },
 
-                "score":
-                    15,
-
-                "hex":
-                    "#F87171",
-
-                "text":
-                    "text-red-400",
+            "UNKNOWN": {
+                "label": "UNKNOWN RISK",
+                "score": 0,
+                "hex": "#64748B",
+                "text": "text-slate-400",
             },
         }
 
+
         risk_info = ui_mapping.get(
             risk_level_str,
-            ui_mapping["LOW"]
+            ui_mapping[
+                "UNKNOWN"
+            ]
         )
 
-        # =================================================
+
+        # ====================================================
         # SECURITY SCORE
-        # =================================================
+        # ====================================================
 
-        # Use real security score from task if available.
-        # Otherwise keep existing UI fallback score.
-        security_score = scan_data.get(
-            "security_score"
+        security_score = (
+            scan_data.get(
+                "security_score"
+            )
         )
+
 
         if security_score is None:
 
@@ -620,32 +938,43 @@ def scan_report(request, task_id):
                 )
             )
 
+
         if security_score is None:
 
             security_score = (
-                risk_info["score"]
+                risk_info[
+                    "score"
+                ]
             )
 
-        # =================================================
-        # MODEL CONFIDENCE
-        # =================================================
 
-        confidence = scan_data.get(
-            "confidence"
+        # ====================================================
+        # CONFIDENCE
+        # ====================================================
+
+        confidence_value = (
+            scan_data.get(
+                "confidence"
+            )
         )
 
-        if confidence is None:
 
-            confidence = (
+        if confidence_value is None:
+
+            confidence_value = (
                 ai_prediction.get(
                     "confidence",
                     0
                 )
             )
 
+
         try:
+
             confidence = round(
-                float(confidence),
+                float(
+                    confidence_value
+                ),
                 2
             )
 
@@ -653,88 +982,96 @@ def scan_report(request, task_id):
             TypeError,
             ValueError
         ):
+
             confidence = 0
 
-        # =================================================
-        # VULNERABILITY DETAILS
-        # =================================================
+
+        # ====================================================
+        # VULNERABILITY DATA
+        # ====================================================
 
         vulnerability_details = (
+
             scan_data.get(
                 "vulnerability_details",
                 {}
             )
+
+            if isinstance(
+                scan_data.get(
+                    "vulnerability_details"
+                ),
+                dict
+            )
+
+            else {}
+
         )
 
-        if not isinstance(
-            vulnerability_details,
-            dict
-        ):
-            vulnerability_details = {}
 
-        # =================================================
-        # SITE-SPECIFIC ISSUES / EVIDENCE
-        # =================================================
+        issues = (
 
-        issues = scan_data.get(
-            "issues",
-            {}
+            scan_data.get(
+                "issues",
+                {}
+            )
+
+            if isinstance(
+                scan_data.get(
+                    "issues"
+                ),
+                dict
+            )
+
+            else {}
+
         )
 
-        if not isinstance(
-            issues,
-            dict
-        ):
-            issues = {}
 
-        # =================================================
-        # VECTOR FALLBACK
-        # =================================================
+        # If task returned only vector,
+        # rebuild the detail dictionary.
 
         if (
             not vulnerability_details
-            and "vector" in scan_data
+            and
+            "vector"
+            in scan_data
         ):
 
-            keys = [
-                "missing_hsts",
-                "missing_x_frame_options",
-                "missing_x_content_type_options",
-                "missing_csp",
-                "exposed_server_header",
-                "exposed_x_powered_by",
-                "weak_ssl_certificate",
-                "exposed_dir_listing",
-                "missing_httponly_cookie",
-                "missing_secure_cookie",
-                "cors_wildcard",
-                "outdated_cms_header",
-            ]
-
-            vector = scan_data.get(
-                "vector",
-                []
+            vector = (
+                scan_data.get(
+                    "vector",
+                    []
+                )
             )
 
             vulnerability_details = {
-                keys[i]:
+
+                FEATURE_KEYS[index]:
                     bool(
-                        vector[i]
+                        vector[index]
                     )
 
-                for i in range(
+                for index
+                in range(
                     min(
-                        len(keys),
-                        len(vector)
+                        len(
+                            FEATURE_KEYS
+                        ),
+                        len(
+                            vector
+                        )
                     )
                 )
             }
 
-        # =================================================
-        # BUILD DETECTED VULNERABILITY LIST
-        # =================================================
+
+        # ====================================================
+        # BUILD FINDINGS
+        # ====================================================
 
         found_vulns = []
+
 
         for (
             key,
@@ -742,27 +1079,78 @@ def scan_report(request, task_id):
         ) in vulnerability_details.items():
 
             if not is_vulnerable:
+
                 continue
 
-            if key not in VULNERABILITY_DICT:
+
+            # -----------------------------------------------
+            # OLLAMA SEMANTIC FINDING
+            # -----------------------------------------------
+
+            if (
+                key
+                == "semantic_zero_day"
+            ):
+
+                found_vulns.append({
+
+                    "key":
+                        key,
+
+                    "name":
+                        (
+                            "Semantic "
+                            "Zero-Day Threat"
+                        ),
+
+                    "issue":
+                        issues.get(
+                            key,
+                            ""
+                        ),
+
+                    "description":
+                        (
+                            "Novel vulnerability "
+                            "detected via Deep "
+                            "LLM Inspection."
+                        ),
+
+                    "fix":
+                        (
+                            "Investigate anomalous "
+                            "configurations and rotate "
+                            "exposed secrets."
+                        ),
+                })
+
                 continue
 
-            # COPY so VULNERABILITY_DICT itself
-            # is never modified.
+
+            # -----------------------------------------------
+            # STANDARD VULNERABILITY
+            # -----------------------------------------------
+
+            if (
+                key
+                not in VULNERABILITY_DICT
+            ):
+
+                continue
+
+
             vuln_data = (
                 VULNERABILITY_DICT[
                     key
                 ].copy()
             )
 
-            # Keep vulnerability key available
+
             vuln_data[
                 "key"
             ] = key
 
-            # IMPORTANT:
-            # Exact issue/evidence generated
-            # by the scanner.
+
             vuln_data[
                 "issue"
             ] = issues.get(
@@ -770,13 +1158,15 @@ def scan_report(request, task_id):
                 ""
             )
 
+
             found_vulns.append(
                 vuln_data
             )
 
-        # =================================================
+
+        # ====================================================
         # TEMPLATE CONTEXT
-        # =================================================
+        # ====================================================
 
         context = {
 
@@ -817,7 +1207,14 @@ def scan_report(request, task_id):
 
             "issues":
                 issues,
+
+            "is_ollama":
+                is_ollama,
+
+            "engine_label":
+                engine_label,
         }
+
 
         return render(
             request,
@@ -825,14 +1222,16 @@ def scan_report(request, task_id):
             context
         )
 
-    # =====================================================
-    # FAILED / INCOMPLETE SCAN
-    # =====================================================
+
+    # ========================================================
+    # SCAN FAILURE
+    # ========================================================
 
     return render(
         request,
         "websites/report.html",
         {
+
             "url":
                 "Error",
 
@@ -848,22 +1247,17 @@ def scan_report(request, task_id):
             "risk_text_color":
                 "text-slate-500",
 
-            "confidence":
-                0,
-
             "total_issues":
                 0,
 
-            "found_vulns":
-                [],
+            "is_ollama":
+                False,
 
-            "raw_flags":
-                {},
-
-            "issues":
-                {},
+            "engine_label":
+                "Unavailable",
         }
     )
+
 
 # ============================================================
 # HISTORY
@@ -871,38 +1265,64 @@ def scan_report(request, task_id):
 
 def history_view(request):
 
-    if "user_id" not in request.session:
-        return redirect("login")
+    if (
+        "user_id"
+        not in request.session
+    ):
 
-    # Our History UI is inside the Profile page
+        return redirect(
+            "login"
+        )
+
+
     return redirect(
-        f"{reverse('profile')}#history-section"
+        f"{reverse('profile')}"
+        "#history-section"
     )
 
 
 # ============================================================
-# REPORTS
+# REPORT LIST
 # ============================================================
 
 def reports_view(request):
 
-    if "user_id" not in request.session:
-        return redirect("login")
-
-    user_id = request.session.get(
+    if (
         "user_id"
+        not in request.session
+    ):
+
+        return redirect(
+            "login"
+        )
+
+
+    user_id = (
+        request.session.get(
+            "user_id"
+        )
     )
+
 
     scan_objects = (
+
         Scan.objects
-        .select_related("website")
-        .filter(
-            website__user_id=user_id
+        .select_related(
+            "website"
         )
-        .order_by("-scan_date")
+        .filter(
+            website__user_id=(
+                user_id
+            )
+        )
+        .order_by(
+            "-scan_date"
+        )
     )
 
+
     scans = []
+
 
     for scan in scan_objects:
 
@@ -914,14 +1334,18 @@ def reports_view(request):
             .count()
         )
 
-        confidence = recompute_saved_confidence(
-            scan
+
+        security_score = (
+
+            scan.security_score
+
+            if scan.security_score
+            is not None
+
+            else 100
+
         )
 
-        display_score = max(
-            0,
-            100 - (findings * 8)
-        )
 
         scans.append({
 
@@ -932,14 +1356,16 @@ def reports_view(request):
                 scan.website.website_url,
 
             "risk_level":
-                scan.risk_level
-                or "Unknown",
+                (
+                    scan.risk_level
+                    or "Unknown"
+                ),
 
             "confidence":
-                confidence,
+                recompute_saved_confidence(
+                    scan
+                ),
 
-            # IMPORTANT:
-            # use scan.pk with current models
             "task_id":
                 scan.pk,
 
@@ -947,16 +1373,85 @@ def reports_view(request):
                 scan.pk,
 
             "security_score":
-                display_score,
+                security_score,
 
             "findings":
                 findings,
         })
 
+
     return render(
         request,
         "reports/reports.html",
         {
-            "scans": scans
+            "scans":
+                scans
         }
     )
+
+
+# ============================================================
+# CONTROLLED OLLAMA TEST TARGET
+# ============================================================
+
+def zero_day_test_target(request):
+
+    """
+    Controlled local target with secure baseline headers
+    and simulated semantic disclosure.
+    """
+
+    response = HttpResponse(
+        "Vulnex Tier 2 Honeypot Target"
+    )
+
+
+    response[
+        "Strict-Transport-Security"
+    ] = (
+        "max-age=31536000; "
+        "includeSubDomains"
+    )
+
+
+    response[
+        "X-Frame-Options"
+    ] = "DENY"
+
+
+    response[
+        "X-Content-Type-Options"
+    ] = "nosniff"
+
+
+    response[
+        "Content-Security-Policy"
+    ] = "default-src 'self'"
+
+
+    response[
+        "Server"
+    ] = "VulnexSecureGateway"
+
+
+    response[
+        "Set-Cookie"
+    ] = (
+        "session=trusted; "
+        "HttpOnly; Secure"
+    )
+
+
+    response[
+        "X-Backend-Database-IP"
+    ] = "10.240.5.112"
+
+
+    response[
+        "X-Debug-API-Token"
+    ] = (
+        "vulnex_admin_secret_9942"
+    )
+
+
+    return response

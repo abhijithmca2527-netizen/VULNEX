@@ -41,4 +41,6 @@ urlpatterns = [
         views.reports_view,
         name='reports'
     ),
+
+    path('test-target/', views.zero_day_test_target, name='zero_day_test'),
 ]

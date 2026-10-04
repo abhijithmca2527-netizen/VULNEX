@@ -2,8 +2,13 @@
 <html lang="en">
 
 <head>
+
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
 
     <title>Reports — VulnEx</title>
 
@@ -291,7 +296,14 @@
 
                         <!-- DATE -->
 
-                        <td class="px-5 py-4 text-slate-400 whitespace-nowrap">
+                        <td
+                            class="
+                                px-5
+                                py-4
+                                text-slate-400
+                                whitespace-nowrap
+                            "
+                        >
 
                             {{ scan.created_at|date:"d M Y, H:i" }}
 
@@ -335,7 +347,31 @@
                             {% with risk=scan.risk_level|lower %}
 
 
-                                {% if risk == "critical" %}
+                                <!-- CLEAN -->
+
+                                {% if risk == "clean" %}
+
+                                    <span
+                                        class="
+                                            inline-flex
+                                            items-center
+                                            px-3
+                                            py-1
+                                            rounded-full
+                                            bg-low/10
+                                            text-low
+                                            border
+                                            border-low/20
+                                            font-medium
+                                        "
+                                    >
+                                        Clean
+                                    </span>
+
+
+                                <!-- CRITICAL -->
+
+                                {% elif risk == "critical" %}
 
                                     <span
                                         class="
@@ -354,6 +390,8 @@
                                         Critical
                                     </span>
 
+
+                                <!-- HIGH -->
 
                                 {% elif risk == "high" %}
 
@@ -375,6 +413,8 @@
                                     </span>
 
 
+                                <!-- MEDIUM -->
+
                                 {% elif risk == "medium" %}
 
                                     <span
@@ -394,6 +434,8 @@
                                         Medium
                                     </span>
 
+
+                                <!-- LOW -->
 
                                 {% elif risk == "low" %}
 
@@ -415,6 +457,8 @@
                                     </span>
 
 
+                                <!-- UNKNOWN / OLD DATA -->
+
                                 {% else %}
 
                                     <span
@@ -432,7 +476,6 @@
                                     >
                                         Unknown
                                     </span>
-
 
                                 {% endif %}
 
@@ -516,7 +559,6 @@
                                     Report unavailable
                                 </span>
 
-
                             {% endif %}
 
 
@@ -529,7 +571,6 @@
                     <!-- ============================= -->
                     <!-- NO REPORTS -->
                     <!-- ============================= -->
-
 
                     {% empty %}
 
@@ -549,6 +590,7 @@
                                 🔍
                             </div>
 
+
                             <h3
                                 class="
                                     text-white
@@ -558,6 +600,7 @@
                             >
                                 No Scan Reports Yet
                             </h3>
+
 
                             <p
                                 class="

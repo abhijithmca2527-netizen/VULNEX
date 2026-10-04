@@ -1,12 +1,14 @@
 from django.db import models
+
 from users.models import User
 
 
 # ============================================================
-# EXISTING JOWIN MODELS
+# LEGACY SCAN RESULT MODEL
 # ============================================================
 
 class ScanResult(models.Model):
+
     target_url = models.URLField()
 
     feature_vector = models.CharField(
@@ -18,48 +20,15 @@ class ScanResult(models.Model):
     )
 
     def __str__(self):
-        return f"{self.target_url} - {self.created_at}"
 
-
-class SandboxThreat(models.Model):
-    """Quarantined scans flagged as anomalies by the Isolation Forest."""
-
-    target_url = models.URLField()
-
-    feature_vector = models.CharField(
-        max_length=100
-    )
-
-    rf_predicted_risk = models.CharField(
-        max_length=50,
-        blank=True,
-        null=True
-    )
-
-    is_approved = models.BooleanField(
-        default=False
-    )
-
-    verified_risk_level = models.CharField(
-        max_length=50,
-        blank=True,
-        null=True
-    )
-
-    created_at = models.DateTimeField(
-        auto_now_add=True
-    )
-
-    def __str__(self):
         return (
-            f"ANOMALY - {self.target_url} "
-            f"({self.created_at})"
+            f"{self.target_url} - "
+            f"{self.created_at}"
         )
 
 
 # ============================================================
-# EXISTING SUPABASE TABLE MAPPINGS
-# managed=False = Django uses the tables but does not create them
+# WEBSITE
 # ============================================================
 
 class Website(models.Model):
@@ -89,18 +58,20 @@ class Website(models.Model):
     )
 
     class Meta:
+
         managed = False
         db_table = "WEBSITES"
 
     def __str__(self):
+
         return self.website_url
 
 
 # ============================================================
 # SCAN
 #
-# website = website that was scanned
-# user    = actual logged-in user who performed the scan
+# website = website being scanned
+# user    = logged-in user who performed the scan
 # ============================================================
 
 class Scan(models.Model):
@@ -116,12 +87,6 @@ class Scan(models.Model):
         db_column="website_id",
         related_name="scans"
     )
-
-    # --------------------------------------------------------
-    # ACTUAL USER WHO PERFORMED THE SCAN
-    #
-    # SCANS.user_id -> USERS.user_id
-    # --------------------------------------------------------
 
     user = models.ForeignKey(
         User,
@@ -148,6 +113,7 @@ class Scan(models.Model):
     )
 
     class Meta:
+
         managed = False
         db_table = "SCANS"
 
@@ -193,10 +159,12 @@ class Vulnerability(models.Model):
     )
 
     class Meta:
+
         managed = False
         db_table = "VULNERABILITIES"
 
     def __str__(self):
+
         return self.vulnerability_name
 
 
@@ -238,10 +206,12 @@ class AIDataset(models.Model):
     )
 
     class Meta:
+
         managed = False
         db_table = "AI_DATASET"
 
     def __str__(self):
+
         return self.vulnerability_name
 
 
@@ -274,10 +244,12 @@ class Report(models.Model):
     )
 
     class Meta:
+
         managed = False
         db_table = "REPORTS"
 
     def __str__(self):
+
         return (
             f"Report {self.report_id} - "
             f"Scan {self.scan_id}"

@@ -6,12 +6,21 @@ import urllib3
 import re
 
 
-# Suppress warnings because the HTTP inspection
-# intentionally continues even for invalid certificates.
+# ============================================================
+# SUPPRESS HTTPS WARNINGS
+# ============================================================
+
+# VulnEx intentionally continues HTTP inspection even when
+# certificate validation fails so that the failure itself
+# can be reported as a security finding.
 urllib3.disable_warnings(
     urllib3.exceptions.InsecureRequestWarning
 )
 
+
+# ============================================================
+# VULNEX FEATURE EXTRACTOR
+# ============================================================
 
 class VulnexFeatureExtractor:
 
@@ -23,30 +32,49 @@ class VulnexFeatureExtractor:
             "User-Agent": (
                 "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
                 "AppleWebKit/537.36 (KHTML, like Gecko) "
-                "Chrome/120.0.0.0 Safari/537.36"
+                "Chrome/120.0.0.0 Safari/537.36 "
+                "VulnEx/1.0"
             )
         }
 
 
+    # ========================================================
+    # EXTRACT FEATURES
+    # ========================================================
+
     def extract_features(self, target_url):
+
         """
         Returns:
-        - URL
+
+        - normalized URL
         - 12-bit feature vector
         - vulnerability flags
-        - site-specific Issue evidence
+        - site-specific issue evidence
+        - raw response headers for Ollama analysis
         """
 
-        # ============================================================
+        # ====================================================
         # NORMALIZE URL
-        # ============================================================
+        # ====================================================
+
+        target_url = (
+            target_url
+            or ""
+        ).strip()
 
         if not target_url.startswith(
-            ("http://", "https://")
-        ):
-            target_url = (
-                "https://" + target_url
+            (
+                "http://",
+                "https://"
             )
+        ):
+
+            target_url = (
+                "https://"
+                + target_url
+            )
+
 
         parsed_url = urllib.parse.urlparse(
             target_url
@@ -55,38 +83,53 @@ class VulnexFeatureExtractor:
         domain = parsed_url.hostname
 
 
-        # ============================================================
+        # ====================================================
         # FEATURE FLAGS
-        # ============================================================
+        # ====================================================
 
         missing_hsts = 0
+
         missing_x_frame = 0
+
         missing_x_content_type = 0
+
         missing_csp = 0
 
         exposed_server = 0
+
         exposed_x_powered_by = 0
 
         weak_ssl = 0
+
         exposed_dir_listing = 0
 
         missing_httponly = 0
+
         missing_secure = 0
 
         cors_wildcard = 0
+
         outdated_cms = 0
 
 
-        # ============================================================
-        # ACTUAL ISSUE EVIDENCE
-        # ============================================================
+        # ====================================================
+        # ISSUE EVIDENCE
+        # ====================================================
 
         issues = {}
 
 
-        # ============================================================
-        # 1. SSL / TLS
-        # ============================================================
+        # Safe defaults.
+        # These will also be returned if the HTTP request fails.
+
+        headers = {}
+
+        final_url = target_url
+
+
+        # ====================================================
+        # SSL / TLS CHECK
+        # ====================================================
 
         if parsed_url.scheme == "http":
 
@@ -107,7 +150,10 @@ class VulnexFeatureExtractor:
                 )
 
                 with socket.create_connection(
-                    (domain, 443),
+                    (
+                        domain,
+                        443
+                    ),
                     timeout=self.timeout
                 ) as sock:
 
@@ -117,6 +163,7 @@ class VulnexFeatureExtractor:
                     ) as ssl_socket:
 
                         ssl_socket.getpeercert()
+
 
             except Exception as exc:
 
@@ -130,21 +177,40 @@ class VulnexFeatureExtractor:
                 )
 
 
-        # ============================================================
-        # 2. HTTP RESPONSE
-        # ============================================================
+        # ====================================================
+        # HTTP RESPONSE
+        # ====================================================
 
         try:
 
-            response = requests.get(
+            # =================================================
+            # PERSISTENT SESSION
+            # =================================================
+
+            session = requests.Session()
+
+            session.headers.update(
+                self.headers
+            )
+
+
+            # Follow redirects.
+            # response represents the final HTTP response.
+
+            response = session.get(
                 target_url,
-                headers=self.headers,
                 timeout=self.timeout,
                 verify=False,
                 allow_redirects=True
             )
 
+
             final_url = response.url
+
+
+            # =================================================
+            # NORMALIZE RESPONSE HEADERS
+            # =================================================
 
             headers = {
                 key.lower(): value
@@ -152,14 +218,15 @@ class VulnexFeatureExtractor:
                 in response.headers.items()
             }
 
+
             body_text = (
                 response.text.lower()
             )
 
 
-            # ========================================================
+            # =================================================
             # 1 — MISSING HSTS
-            # ========================================================
+            # =================================================
 
             if (
                 "strict-transport-security"
@@ -177,9 +244,9 @@ class VulnexFeatureExtractor:
                 )
 
 
-            # ========================================================
+            # =================================================
             # 2 — MISSING X-FRAME-OPTIONS
-            # ========================================================
+            # =================================================
 
             if (
                 "x-frame-options"
@@ -197,13 +264,22 @@ class VulnexFeatureExtractor:
                 )
 
 
-            # ========================================================
+            # =================================================
             # 3 — MISSING X-CONTENT-TYPE-OPTIONS
-            # ========================================================
+            # =================================================
+
+            x_content_type = (
+                headers.get(
+                    "x-content-type-options",
+                    ""
+                )
+                .strip()
+                .lower()
+            )
 
             if (
-                "x-content-type-options"
-                not in headers
+                x_content_type
+                != "nosniff"
             ):
 
                 missing_x_content_type = 1
@@ -212,14 +288,14 @@ class VulnexFeatureExtractor:
                     "missing_x_content_type_options"
                 ] = (
                     "X-Content-Type-Options "
-                    "header not found in HTTP "
-                    f"response from {final_url}"
+                    "header is missing or is not "
+                    f"set to nosniff on {final_url}"
                 )
 
 
-            # ========================================================
+            # =================================================
             # 4 — MISSING CSP
-            # ========================================================
+            # =================================================
 
             if (
                 "content-security-policy"
@@ -237,21 +313,29 @@ class VulnexFeatureExtractor:
                 )
 
 
-            # ========================================================
-            # 5 — EXPOSED SERVER HEADER
-            # ========================================================
+            # =================================================
+            # 5 — EXPOSED SERVER VERSION
+            # =================================================
 
-            server_header = headers.get(
-                "server",
-                ""
-            ).strip()
+            server_header = (
+                headers.get(
+                    "server",
+                    ""
+                )
+                .strip()
+            )
+
 
             if server_header:
+
+                # Only flag the header when it contains
+                # an actual numeric software version.
 
                 version_match = re.search(
                     r"\b\d+(?:\.\d+){1,4}\b",
                     server_header
                 )
+
 
                 if version_match:
 
@@ -267,14 +351,18 @@ class VulnexFeatureExtractor:
                     )
 
 
-            # ========================================================
+            # =================================================
             # 6 — EXPOSED X-POWERED-BY
-            # ========================================================
+            # =================================================
 
-            powered_by = headers.get(
-                "x-powered-by",
-                ""
-            ).strip()
+            powered_by = (
+                headers.get(
+                    "x-powered-by",
+                    ""
+                )
+                .strip()
+            )
+
 
             if powered_by:
 
@@ -288,9 +376,9 @@ class VulnexFeatureExtractor:
                 )
 
 
-            # ========================================================
+            # =================================================
             # 7 — DIRECTORY LISTING
-            # ========================================================
+            # =================================================
 
             directory_indicators = [
                 "index of /",
@@ -298,9 +386,8 @@ class VulnexFeatureExtractor:
                 "parent directory",
             ]
 
-            for indicator in (
-                directory_indicators
-            ):
+
+            for indicator in directory_indicators:
 
                 if indicator in body_text:
 
@@ -317,79 +404,155 @@ class VulnexFeatureExtractor:
                     break
 
 
-            # ========================================================
-            # 8 / 9 — COOKIE FLAGS
-            # ========================================================
+            # =================================================
+            # 8 / 9 — COOKIE SECURITY FLAGS
+            # =================================================
 
-            set_cookie_header = (
-                headers.get(
-                    "set-cookie",
-                    ""
-                )
+            # Session includes cookies received during redirects
+            # and from the final response.
+
+            session_cookies = list(
+                session.cookies
             )
 
-            if (
-                response.cookies
-                or set_cookie_header
-            ):
 
-                cookie_names = [
+            # Only security-sensitive cookies should create
+            # authentication/session-cookie vulnerability
+            # findings.
+            #
+            # Analytics/tracking cookies such as:
+            #
+            # _ga
+            # _octo
+            #
+            # should not make an otherwise protected site
+            # automatically vulnerable.
+
+            sensitive_cookie_keywords = (
+                "session",
+                "sessionid",
+                "auth",
+                "token",
+                "jwt",
+                "login",
+                "remember",
+            )
+
+
+            missing_httponly_names = []
+
+            missing_secure_names = []
+
+
+            for cookie in session_cookies:
+
+                cookie_name = (
                     cookie.name
-                    for cookie
-                    in response.cookies
-                ]
+                    or ""
+                ).lower()
 
-                cookie_display = (
-                    ", ".join(cookie_names)
-                    if cookie_names
-                    else "Response cookie"
+
+                # ---------------------------------------------
+                # DETERMINE WHETHER COOKIE IS SECURITY-SENSITIVE
+                # ---------------------------------------------
+
+                is_sensitive_cookie = any(
+                    keyword in cookie_name
+                    for keyword
+                    in sensitive_cookie_keywords
                 )
 
 
-                # Missing HttpOnly
+                # Ignore analytics/tracking/non-sensitive cookies.
 
-                if (
-                    "httponly"
-                    not in
-                    set_cookie_header.lower()
-                ):
+                if not is_sensitive_cookie:
 
-                    missing_httponly = 1
+                    continue
 
-                    issues[
-                        "missing_httponly_cookie"
-                    ] = (
-                        f'Cookie "{cookie_display}" '
-                        "is missing HttpOnly flag"
+
+                # ---------------------------------------------
+                # CHECK HTTPONLY
+                # ---------------------------------------------
+
+                has_httponly = (
+                    cookie.has_nonstandard_attr(
+                        "HttpOnly"
+                    )
+                    or
+                    cookie.has_nonstandard_attr(
+                        "httponly"
+                    )
+                )
+
+
+                if not has_httponly:
+
+                    missing_httponly_names.append(
+                        cookie.name
                     )
 
 
-                # Missing Secure
+                # ---------------------------------------------
+                # CHECK SECURE
+                # ---------------------------------------------
 
-                if (
-                    "secure"
-                    not in
-                    set_cookie_header.lower()
-                ):
+                if not cookie.secure:
 
-                    missing_secure = 1
-
-                    issues[
-                        "missing_secure_cookie"
-                    ] = (
-                        f'Cookie "{cookie_display}" '
-                        "is missing Secure flag"
+                    missing_secure_names.append(
+                        cookie.name
                     )
 
 
-            # ========================================================
+            # =================================================
+            # MISSING HTTPONLY
+            # =================================================
+
+            if missing_httponly_names:
+
+                missing_httponly = 1
+
+                issues[
+                    "missing_httponly_cookie"
+                ] = (
+                    "Security-sensitive cookie(s) "
+                    "missing HttpOnly flag: "
+                    + ", ".join(
+                        missing_httponly_names
+                    )
+                )
+
+
+            # =================================================
+            # MISSING SECURE
+            # =================================================
+
+            if missing_secure_names:
+
+                missing_secure = 1
+
+                issues[
+                    "missing_secure_cookie"
+                ] = (
+                    "Security-sensitive cookie(s) "
+                    "missing Secure flag: "
+                    + ", ".join(
+                        missing_secure_names
+                    )
+                )
+
+
+            # =================================================
             # 10 — CORS WILDCARD
-            # ========================================================
+            # =================================================
 
-            cors_header = headers.get(
-                "access-control-allow-origin",
-                ""
-            ).strip()
+            cors_header = (
+                headers.get(
+                    "access-control-allow-origin",
+                    ""
+                )
+                .strip()
+            )
+
 
             if cors_header == "*":
 
@@ -403,17 +566,19 @@ class VulnexFeatureExtractor:
                 )
 
 
-            # ========================================================
+            # =================================================
             # 11 — CMS / TECHNOLOGY SIGNATURE
-            # ========================================================
+            # =================================================
 
             cms_header_values = []
+
 
             cms_headers = [
                 "x-generator",
                 "x-drupal-cache",
                 "x-redirect-by",
             ]
+
 
             for header in cms_headers:
 
@@ -445,6 +610,7 @@ class VulnexFeatureExtractor:
 
             detected_cms = None
 
+
             for (
                 cms_name,
                 keywords
@@ -469,6 +635,7 @@ class VulnexFeatureExtractor:
 
                 outdated_cms = 1
 
+
                 if cms_header_values:
 
                     issues[
@@ -481,6 +648,7 @@ class VulnexFeatureExtractor:
                         )
                     )
 
+
                 elif detected_cms:
 
                     issues[
@@ -492,9 +660,9 @@ class VulnexFeatureExtractor:
                     )
 
 
-        # ============================================================
+        # ====================================================
         # HTTP REQUEST FAILED
-        # ============================================================
+        # ====================================================
 
         except Exception as exc:
 
@@ -503,11 +671,12 @@ class VulnexFeatureExtractor:
             ] = str(exc)
 
 
-        # ============================================================
+        # ====================================================
         # 12-BIT FEATURE VECTOR
         #
-        # DO NOT CHANGE THIS ORDER WITHOUT RETRAINING THE MODEL
-        # ============================================================
+        # IMPORTANT:
+        # DO NOT CHANGE THIS ORDER WITHOUT RETRAINING RF MODEL
+        # ====================================================
 
         feature_vector = [
 
@@ -561,9 +730,9 @@ class VulnexFeatureExtractor:
         ]
 
 
-        # ============================================================
+        # ====================================================
         # RETURN RESULT
-        # ============================================================
+        # ====================================================
 
         return {
 
@@ -636,9 +805,22 @@ class VulnexFeatureExtractor:
                     ),
             },
 
-            # IMPORTANT:
-            # This feeds the Issue column
-            # in your report.
+
+            # Issue/evidence displayed in VulnEx reports.
+
             "issues":
                 issues,
+
+
+            # Final-response information passed to the
+            # secondary Ollama analysis when vector = all zero.
+
+            "raw_data": {
+
+                "headers":
+                    headers,
+
+                "final_url":
+                    final_url,
+            },
         }

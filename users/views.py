@@ -877,10 +877,11 @@ def profile_view(request):
         # 4 findings = 68
         # ----------------------------------------------------
 
-        score = max(
-            0,
-            100 - (findings * 8)
-        )
+        score = (
+    scan.security_score
+    if scan.security_score is not None
+    else 100
+)
 
         all_scores.append(
             score
@@ -986,10 +987,11 @@ def profile_view(request):
             .count()
         )
 
-        display_score = max(
-            0,
-            100 - (findings * 8)
-        )
+        display_score = (
+    scan.security_score
+    if scan.security_score is not None
+    else 100
+)
 
         recent_scans.append({
 
