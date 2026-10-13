@@ -9,7 +9,7 @@ https://docs.djangoproject.com/en/6.0/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/6.0/ref/settings/
 """
-
+import dj_database_url
 from pathlib import Path
 import os
 from dotenv import load_dotenv
@@ -83,18 +83,14 @@ WSGI_APPLICATION = 'Vulnex.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/6.0/ref/settings/#databases
 
+import dj_database_url
+
 DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.postgresql",
-        "NAME": os.getenv("SUPABASE_DB_NAME", "postgres"),
-        "USER": os.getenv("SUPABASE_DB_USER"),
-        "PASSWORD": os.getenv("SUPABASE_DB_PASSWORD"),
-        "HOST": os.getenv("SUPABASE_DB_HOST"),
-        "PORT": os.getenv("SUPABASE_DB_PORT", "5432"),
-        "OPTIONS": {
-            "sslmode": "require",
-        },
-    }
+    'default': dj_database_url.config(
+        default=os.getenv('postgresql://postgres.jeruaboomqsxxehagbos:Vulnex%402026@aws-0-ap-northeast-1.pooler.supabase.com:5432/postgres'),
+        conn_max_age=600,
+        ssl_require=True
+    )
 }
 
 
