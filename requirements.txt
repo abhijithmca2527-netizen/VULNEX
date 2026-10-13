@@ -14,11 +14,16 @@ django-cors-headers==4.9.0
 djangorestframework==3.17.1
 gunicorn==26.2.0
 idna==3.18
+joblib==1.5.3
 kombu==5.6.2
+numpy==2.5.1
+pandas==3.0.5
 psycopg2-binary==2.9.12
 python-dotenv==1.2.2
 redis==8.0.1
 requests==2.34.2
+scikit-learn==1.9.0
+scipy==1.18.0
 sqlparse==0.5.5
 tzdata==2026.3
 urllib3==2.7.0
