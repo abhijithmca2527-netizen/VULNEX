@@ -20,16 +20,18 @@ load_dotenv()
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 
-# Quick-start development settings - unsuitable for production
-# See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
-
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = os.getenv('DJANGO_SECRET_KEY', 'django-insecure-local-dev-key')
 
+# SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.getenv('DEBUG', 'False') == 'True'
 
 ALLOWED_HOSTS = ['.onrender.com', 'localhost', '127.0.0.1']
 CSRF_TRUSTED_ORIGINS = ['https://*.onrender.com']
+
+# Render terminates HTTPS at its proxy and forwards plain HTTP to gunicorn.
+# This header tells Django the original request was HTTPS.
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
 
 # Application definition
@@ -65,7 +67,7 @@ ROOT_URLCONF = 'Vulnex.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [BASE_DIR / 'templates'], 
+        'DIRS': [BASE_DIR / 'templates'],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -81,7 +83,7 @@ TEMPLATES = [
 WSGI_APPLICATION = 'Vulnex.wsgi.application'
 
 
-# Database
+# Database (Supabase Postgres)
 # https://docs.djangoproject.com/en/6.0/ref/settings/#databases
 
 DATABASES = {
@@ -134,31 +136,49 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/6.0/howto/static-files/
 
 STATIC_URL = 'static/'
-STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles")
+STATIC_ROOT = BASE_DIR / 'staticfiles'
 
 STATICFILES_DIRS = [
     BASE_DIR / 'static',
 ]
 
+# CompressedStaticFilesStorage serves compressed files without the strict
+# manifest check, so a missing file in a template won't cause a 500 error.
+STORAGES = {
+    "default": {
+        "BACKEND": "django.core.files.storage.FileSystemStorage",
+    },
+    "staticfiles": {
+        "BACKEND": "whitenoise.storage.CompressedStaticFilesStorage",
+    },
+}
+
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
+DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 CORS_ALLOW_ALL_ORIGINS = True
 
-# Celery Configuration Options (with Upstash TLS support)
-REDIS_URL = os.getenv('REDIS_URL', 'redis://127.0.0.1:6379/0')
+
+# Celery / Redis (Upstash)
+# The env var REDIS_URL on Render should look like:
+#   rediss://default:<password>@<host>.upstash.io:6379?ssl_cert_reqs=CERT_REQUIRED
+
+def _with_ssl_params(url):
+    """Add ssl_cert_reqs to rediss:// URLs if it is missing."""
+    if url.startswith('rediss://') and 'ssl_cert_reqs' not in url:
+        separator = '&' if '?' in url else '?'
+        return f'{url}{separator}ssl_cert_reqs=CERT_REQUIRED'
+    return url
+
+
+REDIS_URL = _with_ssl_params(os.getenv('REDIS_URL', 'redis://127.0.0.1:6379/0'))
+
 CELERY_BROKER_URL = REDIS_URL
 CELERY_RESULT_BACKEND = REDIS_URL
 CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'
+CELERY_RESULT_SERIALIZER = 'json'
 CELERY_TIMEZONE = 'Asia/Kolkata'
-
-# Enable SSL/TLS configuration for secure cloud Redis providers like Upstash (rediss://)
-if CELERY_BROKER_URL and CELERY_BROKER_URL.startswith("rediss://"):
-    CELERY_BROKER_USE_SSL = {
-        'ssl_cert_reqs': None
-    }
-    CELERY_REDIS_BACKEND_USE_SSL = {
-        'ssl_cert_reqs': None
-    }
+CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True
